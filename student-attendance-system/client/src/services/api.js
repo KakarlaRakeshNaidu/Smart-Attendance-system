@@ -32,6 +32,18 @@ api.interceptors.response.use(
             localStorage.removeItem('teacher');
             window.location.href = '/login';
         }
+        // For blob responses with errors, try to parse the error message
+        if (error.response?.data instanceof Blob) {
+            return error.response.data.text().then(text => {
+                try {
+                    const errorData = JSON.parse(text);
+                    error.message = errorData.message || 'Download failed';
+                } catch (e) {
+                    error.message = 'Download failed';
+                }
+                return Promise.reject(error);
+            });
+        }
         return Promise.reject(error);
     }
 );

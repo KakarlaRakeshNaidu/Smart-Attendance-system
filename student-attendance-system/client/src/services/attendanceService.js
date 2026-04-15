@@ -29,10 +29,51 @@ const attendanceService = {
     },
 
     downloadAttendanceCSV: async (date) => {
-        const response = await api.get(`/attendance/download/${date}`, {
-            responseType: 'blob'
-        });
-        return response.data;
+        try {
+            const response = await api.get(`/attendance/download/${date}`, {
+                responseType: 'blob'
+            });
+            return response.data;
+        } catch (error) {
+            // Extract error message from blob error response
+            if (error.response?.data instanceof Blob) {
+                const text = await error.response.data.text();
+                try {
+                    const errorData = JSON.parse(text);
+                    throw new Error(errorData.message || 'Failed to download attendance');
+                } catch (parseError) {
+                    if (parseError.message !== 'Failed to download attendance' && !parseError.message.includes('Error')) {
+                        throw new Error('Failed to download attendance');
+                    }
+                    throw parseError;
+                }
+            }
+            throw error;
+        }
+    },
+
+    downloadAttendanceCSVRange: async (fromDate, toDate) => {
+        try {
+            const response = await api.get(`/attendance/download/range?fromDate=${fromDate}&toDate=${toDate}`, {
+                responseType: 'blob'
+            });
+            return response.data;
+        } catch (error) {
+            // Extract error message from blob error response
+            if (error.response?.data instanceof Blob) {
+                const text = await error.response.data.text();
+                try {
+                    const errorData = JSON.parse(text);
+                    throw new Error(errorData.message || 'Failed to download attendance');
+                } catch (parseError) {
+                    if (parseError.message !== 'Failed to download attendance' && !parseError.message.includes('Error')) {
+                        throw new Error('Failed to download attendance');
+                    }
+                    throw parseError;
+                }
+            }
+            throw error;
+        }
     },
 
     // Face Recognition Attendance

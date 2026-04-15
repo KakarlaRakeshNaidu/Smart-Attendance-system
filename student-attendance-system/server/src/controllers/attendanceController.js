@@ -213,14 +213,22 @@ exports.downloadAttendanceCSV = async (req, res) => {
         const date = new Date(req.params.date);
         const { start, end } = getDateRange(date);
 
+        // Validate teacherId
+        if (!req.teacherId) {
+            console.error('Teacher ID not found in request');
+            return res.status(401).json({
+                success: false,
+                message: 'Teacher not authenticated'
+            });
+        }
+
+        console.log(`Fetching attendance for teacher ${req.teacherId} on ${date}`);
+
         // Get all students
         const allStudents = await Student.find().sort({ studentId: 1 });
         
         if (allStudents.length === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'No students found in the system' 
-            });
+            console.warn('No students found in system');
         }
 
         // Get attendance for the date
@@ -230,16 +238,152 @@ exports.downloadAttendanceCSV = async (req, res) => {
         });
 
         const attendanceRecords = attendance ? attendance.records : [];
-        const csvData = generateFullAttendanceCSV(allStudents, attendanceRecords, date);
-        const dateStr = date.toISOString().split('T')[0];
+        
+        try {
+            const csvData = generateFullAttendanceCSV(allStudents, attendanceRecords, date);
+            const dateStr = date.toISOString().split('T')[0];
 
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename=attendance_${dateStr}.csv`);
-        res.status(200).send(csvData);
+            console.log(`Generated CSV for ${dateStr}`);
+
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="attendance_${dateStr}.csv"`);
+            res.status(200).send(csvData);
+        } catch (csvError) {
+            console.error('Error generating CSV:', csvError.message);
+            throw csvError;
+        }
     } catch (error) {
+        console.error('Error in downloadAttendanceCSV:', error.message);
+        console.error('Stack:', error.stack);
         res.status(500).json({ 
             success: false, 
-            message: 'Error generating CSV', 
+            message: 'Error generating CSV: ' + error.message,
+            error: error.message 
+        });
+    }
+};
+
+// @desc    Download attendance by date range as CSV
+// @route   GET /api/attendance/download/range?fromDate=XXX&toDate=YYY
+// @access  Private
+exports.downloadAttendanceCSVRange = async (req, res) => {
+    try {
+        const { fromDate, toDate } = req.query;
+        
+        if (!fromDate || !toDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Both fromDate and toDate are required'
+            });
+        }
+
+        // Validate teacherId
+        if (!req.teacherId) {
+            console.error('Teacher ID not found in request');
+            return res.status(401).json({
+                success: false,
+                message: 'Teacher not authenticated'
+            });
+        }
+
+        // Safely parse dates
+        const startDate = new Date(fromDate);
+        const endDate = new Date(toDate);
+
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid date format. Use YYYY-MM-DD format.'
+            });
+        }
+
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        console.log(`Fetching attendance for teacher ${req.teacherId} from ${startDate} to ${endDate}`);
+
+        // Get all students
+        const allStudents = await Student.find().sort({ studentId: 1 });
+
+        // Get all attendance records for the date range
+        const attendanceRecords = await Attendance.find({
+            teacherId: req.teacherId,
+            date: { $gte: startDate, $lte: endDate }
+        }).sort({ date: 1 });
+
+        console.log(`Found ${attendanceRecords.length} attendance records`);
+
+        // Generate all dates in range (DD-MM-YYYY format)
+        const allDates = [];
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            const dd = String(currentDate.getDate()).padStart(2, '0');
+            const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const yyyy = currentDate.getFullYear();
+            allDates.push(`${dd}-${mm}-${yyyy}`);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // Build attendance lookup: { "DD-MM-YYYY": { "studentRollNo": "present"|"absent" } }
+        const attendanceByDate = {};
+        for (const record of attendanceRecords) {
+            if (!record.date) continue;
+            const d = new Date(record.date);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            const dateKey = `${dd}-${mm}-${yyyy}`;
+            
+            if (!attendanceByDate[dateKey]) {
+                attendanceByDate[dateKey] = {};
+            }
+            
+            if (record.records && Array.isArray(record.records)) {
+                for (const att of record.records) {
+                    if (att.studentRollNo) {
+                        attendanceByDate[dateKey][att.studentRollNo] = att.status || 'absent';
+                    }
+                }
+            }
+        }
+
+        // Build CSV header: S.No, Student ID, Name, Class, Section, date1, date2, ...
+        let csvData = `S.No,Student ID,Name,Class,Section,${allDates.join(',')}\n`;
+
+        // Build rows: one per student
+        allStudents.forEach((student, index) => {
+            const row = [
+                index + 1,
+                student.studentId,
+                `"${student.name}"`,
+                student.class || 'N/A',
+                student.section || 'N/A'
+            ];
+
+            // Add P or A for each date
+            for (const dateKey of allDates) {
+                const dateAttendance = attendanceByDate[dateKey];
+                if (dateAttendance && dateAttendance[student.studentId] === 'present') {
+                    row.push('P');
+                } else {
+                    row.push('A');
+                }
+            }
+
+            csvData += row.join(',') + '\n';
+        });
+        
+        const dateRangeStr = `${fromDate}_to_${toDate}`;
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="attendance_${dateRangeStr}.csv"`);
+        res.status(200).send(csvData);
+    } catch (error) {
+        console.error('Error in downloadAttendanceCSVRange:', error.message);
+        console.error('Stack:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error generating CSV: ' + error.message,
             error: error.message 
         });
     }

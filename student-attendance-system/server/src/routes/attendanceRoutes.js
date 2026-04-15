@@ -6,6 +6,7 @@ const {
     getAllAttendance,
     downloadTodayAttendanceCSV,
     downloadAttendanceCSV,
+    downloadAttendanceCSVRange,
     takeFaceAttendance,
     takeMultipleFaceAttendance,
     checkFaceApiStatus,
@@ -23,6 +24,7 @@ router.get('/', getAllAttendance);
 router.get('/today', getTodayAttendance);
 router.get('/date/:date', getAttendanceByDate);
 router.get('/download/today', downloadTodayAttendanceCSV);
+router.get('/download/range', downloadAttendanceCSVRange);
 router.get('/download/:date', downloadAttendanceCSV);
 router.delete('/today', resetTodayAttendance);
 
