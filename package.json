@@ -6,7 +6,7 @@
     "install:all": "npm install && cd student-attendance-system/server && npm install && cd ../client && npm install",
     "install:python": "pip install -r student-attendance-system/server/python/requirements.txt",
     "setup": "npm run install:all && npm run install:python",
-    "start:python": "cd student-attendance-system/server/python && venv/bin/python api_server.py",
+    "start:python": "cd student-attendance-system/server/python && python api_server.py",
     "start:server": "cd student-attendance-system/server && npm run dev",
     "start:client": "cd student-attendance-system/client && npm run dev",
     "dev": "concurrently --kill-others-on-fail -n \"PYTHON,SERVER,CLIENT\" -c \"yellow,blue,green\" \"npm run start:python\" \"npm run start:server\" \"npm run start:client\"",
