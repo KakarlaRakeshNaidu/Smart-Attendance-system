@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ClipboardCheck, ClipboardList, Scan, Download } from 'lucide-react';
+import { ClipboardCheck, ClipboardList, Scan, Download, Image } from 'lucide-react';
 import TakeAttendance from '../components/Attendance/TakeAttendance';
 import AttendanceList from '../components/Attendance/AttendanceList';
 import FaceAttendance from '../components/Attendance/FaceAttendance';
 import DownloadAttendance from '../components/Attendance/DownloadAttendance';
+import PhotoUpload from '../components/Attendance/PhotoUpload';
 import Card from '../components/common/Card';
 
 const Attendance = () => {
@@ -16,7 +17,8 @@ const Attendance = () => {
     };
 
     const tabs = [
-        { id: 'face', label: 'Face Recognition', icon: Scan },
+        { id: 'face', label: 'Live Video', icon: Scan },
+        { id: 'photo', label: 'Photo Upload', icon: Image },
         { id: 'take', label: 'Manual', icon: ClipboardCheck },
         { id: 'view', label: 'Today', icon: ClipboardList },
         { id: 'download', label: 'Download', icon: Download }
@@ -53,6 +55,7 @@ const Attendance = () => {
                 </div>
 
                 {activeTab === 'face' && <FaceAttendance onAttendanceMarked={handleAttendanceMarked} />}
+                {activeTab === 'photo' && <PhotoUpload onAttendanceMarked={handleAttendanceMarked} />}
                 {activeTab === 'take' && <TakeAttendance onAttendanceMarked={handleAttendanceMarked} />}
                 {activeTab === 'view' && <AttendanceList key={refreshKey} />}
                 {activeTab === 'download' && <DownloadAttendance />}

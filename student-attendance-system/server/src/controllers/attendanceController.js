@@ -645,6 +645,122 @@ exports.checkFaceApiStatus = async (req, res) => {
     }
 };
 
+// @desc    Process single photo for bulk attendance (multiple photos)
+// @route   POST /api/attendance/bulk-photos
+// @access  Private
+exports.bulkPhotoAttendance = async (req, res) => {
+    try {
+        const { image } = req.body;
+        
+        if (!image) {
+            return res.status(400).json({
+                success: false,
+                message: 'Image is required'
+            });
+        }
+
+        // Recognize multiple faces using Python API
+        const faceResult = await faceRecognitionService.recognizeMultipleFaces(image);
+        
+        if (!faceResult.success) {
+            return res.status(400).json({
+                success: false,
+                message: faceResult.message || 'No faces recognized',
+                totalFaces: faceResult.totalFaces || 0
+            });
+        }
+
+        const recognizedStudents = faceResult.recognizedStudents || [];
+        
+        const today = new Date();
+        const { start, end } = getDateRange(today);
+
+        // Find or create today's attendance (without class/section filter for bulk photo)
+        let attendance = await Attendance.findOne({
+            teacherId: req.teacherId,
+            date: { $gte: start, $lte: end }
+        });
+
+        const markedStudents = [];
+
+        for (const recognized of recognizedStudents) {
+            const student = await Student.findOne({ studentId: recognized.studentId });
+            
+            if (!student) {
+                continue;
+            }
+
+            if (attendance) {
+                const existingRecord = attendance.records.find(
+                    r => r.studentRollNo === student.studentId
+                );
+                
+                if (existingRecord) {
+                    // Student already marked, skip
+                    continue;
+                }
+            }
+
+            markedStudents.push({
+                studentId: student._id,
+                studentName: student.name,
+                studentRollNo: student.studentId,
+                status: 'present',
+                markedAt: new Date(),
+                confidence: recognized.confidence
+            });
+        }
+
+        if (markedStudents.length > 0) {
+            if (attendance) {
+                attendance.records.push(...markedStudents.map(s => ({
+                    studentId: s.studentId,
+                    studentName: s.studentName,
+                    studentRollNo: s.studentRollNo,
+                    status: s.status,
+                    markedAt: s.markedAt
+                })));
+                await attendance.save();
+            } else {
+                attendance = await Attendance.create({
+                    teacherId: req.teacherId,
+                    date: today,
+                    subject: '',
+                    class: '',
+                    section: '',
+                    records: markedStudents.map(s => ({
+                        studentId: s.studentId,
+                        studentName: s.studentName,
+                        studentRollNo: s.studentRollNo,
+                        status: s.status,
+                        markedAt: s.markedAt
+                    }))
+                });
+            }
+        }
+
+        res.status(201).json({
+            success: markedStudents.length > 0,
+            message: markedStudents.length > 0 
+                ? `Marked attendance for ${markedStudents.length} student(s)`
+                : 'No new students to mark',
+            totalFaces: faceResult.totalFaces || 0,
+            markedCount: markedStudents.length,
+            recognized: markedStudents.map(s => ({
+                name: s.studentName,
+                studentId: s.studentRollNo,
+                confidence: s.confidence
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error processing photo', 
+            error: error.message 
+        });
+    }
+};
+
 // @desc    Reset today's attendance
 // @route   DELETE /api/attendance/today
 // @access  Private

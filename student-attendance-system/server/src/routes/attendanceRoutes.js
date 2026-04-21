@@ -9,6 +9,7 @@ const {
     downloadAttendanceCSVRange,
     takeFaceAttendance,
     takeMultipleFaceAttendance,
+    bulkPhotoAttendance,
     checkFaceApiStatus,
     resetTodayAttendance
 } = require('../controllers/attendanceController');
@@ -31,6 +32,7 @@ router.delete('/today', resetTodayAttendance);
 // Face recognition attendance
 router.post('/face', takeFaceAttendance);
 router.post('/face-multiple', takeMultipleFaceAttendance);
+router.post('/bulk-photos', bulkPhotoAttendance);
 router.get('/face-status', checkFaceApiStatus);
 
 module.exports = router;
