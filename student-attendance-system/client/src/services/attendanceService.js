@@ -91,6 +91,11 @@ const attendanceService = {
         return response.data;
     },
 
+    bulkPhotoAttendance: async (data) => {
+        const response = await api.post('/attendance/bulk-photos', data);
+        return response.data;
+    },
+
     checkFaceApiStatus: async () => {
         const response = await api.get('/attendance/face-status');
         return response.data;
