@@ -8,11 +8,9 @@ import toast from 'react-hot-toast';
 import Table from '../common/Table';
 import Card from '../common/Card';
 
-const StudentList = () => {
+const StudentList = ({ searchTerm }) => {
     const [students, setStudents] = useState([]);
-    const [filteredStudents, setFilteredStudents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [selectedClass, setSelectedClass] = useState('all');
     const [expandedStudentId, setExpandedStudentId] = useState(null);
 
@@ -20,25 +18,10 @@ const StudentList = () => {
         fetchStudents();
     }, []);
 
-    useEffect(() => {
-        const filtered = students.filter((student) => {
-            const matchesSearch =
-                student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (student.email || '').toLowerCase().includes(searchTerm.toLowerCase());
-
-            const matchesClass = selectedClass === 'all' || (student.class || 'N/A') === selectedClass;
-
-            return matchesSearch && matchesClass;
-        });
-        setFilteredStudents(filtered);
-    }, [searchTerm, students, selectedClass]);
-
     const fetchStudents = async () => {
         try {
             const response = await studentService.getAllStudents();
             setStudents(response.students || []);
-            setFilteredStudents(response.students || []);
         } catch (error) {
             toast.error('Failed to fetch students');
         } finally {
@@ -79,6 +62,16 @@ const StudentList = () => {
         return <Loader />;
     }
 
+    const filteredStudents = students.filter((student) => {
+        const term = searchTerm.toLowerCase();
+
+        return (
+            student.name.toLowerCase().includes(term) ||
+            student.studentId.toLowerCase().includes(term) ||
+            (student.email || '').toLowerCase().includes(term)
+        );
+    });
+
     const classOptions = ['all', ...new Set(students.map((student) => student.class || 'N/A'))];
 
     return (
@@ -108,7 +101,6 @@ const StudentList = () => {
                             type="text"
                             placeholder="Search by name, email, or student ID..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="input-field pl-10"
                         />
                     </div>

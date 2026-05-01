@@ -110,21 +110,21 @@ const Dashboard = () => {
             value: stats.todayAttendance,
             icon: ClipboardCheck,
             subtitle: 'Marked records today',
-            link: '/attendance'
+            link: null
         },
         {
             title: 'Present Today',
             value: stats.presentCount,
             icon: TrendingUp,
             subtitle: 'Students present',
-            link: '/attendance'
+            link: null
         },
         {
             title: 'Absent Today',
             value: stats.absentCount,
             icon: Clock,
             subtitle: 'Need follow-up',
-            link: '/attendance'
+            link: null
         }
     ];
 
@@ -145,8 +145,10 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {statCards.map((stat, index) => {
                     const Icon = stat.icon;
+                    const CardWrapper = stat.link ? Link : 'div';
+
                     return (
-                        <Link key={index} to={stat.link}>
+                        <CardWrapper key={index} {...(stat.link ? { to: stat.link } : {})}>
                             <Card className="group p-5 hover:bg-zinc-800">
                                 <div className="mb-4 flex items-start justify-between">
                                     <div className="rounded-xl border border-zinc-700 bg-zinc-800 p-2 text-zinc-200">
@@ -158,7 +160,7 @@ const Dashboard = () => {
                                 <p className="mt-1 text-3xl font-semibold text-white">{stat.value}</p>
                                 <p className="mt-1 text-xs text-zinc-500">{stat.subtitle}</p>
                             </Card>
-                        </Link>
+                        </CardWrapper>
                     );
                 })}
             </div>

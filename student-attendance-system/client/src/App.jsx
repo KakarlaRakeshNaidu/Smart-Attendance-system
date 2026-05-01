@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import Sidebar from './components/common/Sidebar';
@@ -17,13 +17,14 @@ import { useAuth } from './context/AuthContext';
 const App = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {!isAuthPage && isAuthenticated && <Sidebar />}
       <div className={!isAuthPage && isAuthenticated ? 'pl-72' : ''}>
-        {!isAuthPage && isAuthenticated && <Navbar />}
+        {!isAuthPage && isAuthenticated && <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />}
         <main className={isAuthPage ? 'min-h-screen' : 'px-6 py-6'}>
         <Routes>
           {/* Public Routes */}
@@ -38,7 +39,7 @@ const App = () => {
           } />
           <Route path="/students" element={
             <PrivateRoute>
-              <StudentList />
+              <StudentList searchTerm={searchTerm} />
             </PrivateRoute>
           } />
           <Route path="/students/add" element={
