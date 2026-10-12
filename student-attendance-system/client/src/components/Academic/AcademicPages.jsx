@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/authContextState';
 import api from '../../services/api';
 import FaceAttendance from '../Attendance/FaceAttendance';
@@ -25,9 +25,11 @@ function Shell({title,children}) { const {role}=useAuth(); return <div className
     <h1 className="text-2xl font-semibold">{title}</h1>{children}</div>; }
 export function AcademicHome() {
     const {role}=useAuth();
+    const [query,setQuery]=useSearchParams();
     const [tab,setTab]=useState('offerings'), [data,setData]=useState({terms:[],classes:[],courses:[],offerings:[]});
     const [error,setError]=useState(''),[success,setSuccess]=useState(''),[busy,setBusy]=useState(true),[saving,setSaving]=useState(false),[form,setForm]=useState({}),[editing,setEditing]=useState('');
     const lock=useRef(false);
+    useEffect(()=>{const selected=query.get('tab');if(role==='admin'&&['terms','classes','courses','offerings'].includes(selected)){setTab(selected);setForm({});setEditing('');}},[query.toString(),role]);
     async function load() { setBusy(true); try {
         const kinds=role==='admin'?['terms','classes','courses','offerings']:['offerings'];
         const results=await Promise.all(kinds.map(k=>api.get(base+(k==='offerings'?'/offerings':'/structures/'+k))));
@@ -40,7 +42,7 @@ export function AcademicHome() {
     async function archive(item) {if(lock.current)return;lock.current=true;setSaving(true);setError('');try {await api.patch(base+(tab==='offerings'?'/offerings':'/structures/'+tab)+'/'+item._id,{state:item.state==='active'?'archived':'active'});setSuccess('Lifecycle updated. Historical attendance remains readable.');await load();}catch(e){setError(message(e));}finally{lock.current=false;setSaving(false);}}
     return <Shell title={role==='admin'?'Academic management':role==='teacher'?'My courses/classes':'My course enrolments'}>
         <p className="text-zinc-400">A course offering links a course, term and class group. A student profile does not automatically create an enrolment or activate an account.</p>
-        {role==='admin'&&<div className="flex flex-wrap gap-2">{['terms','classes','courses','offerings'].map(k=><button disabled={saving} key={k} className={tab===k?'btn-primary':'btn-secondary'} onClick={()=>{setTab(k);setForm({});setEditing('');setError('');setSuccess('');}}>{k==='classes'?'Class groups':k[0].toUpperCase()+k.slice(1)}</button>)}</div>}
+        {role==='admin'&&<div className="flex flex-wrap gap-2">{['terms','classes','courses','offerings'].map(k=><button disabled={saving} key={k} className={tab===k?'btn-primary':'btn-secondary'} onClick={()=>{setTab(k);setQuery({tab:k});setForm({});setEditing('');setError('');setSuccess('');}}>{k==='classes'?'Class groups':k[0].toUpperCase()+k.slice(1)}</button>)}</div>}
         <Notice error={error} success={success} busy={busy}/>
         {role==='admin'&&<form onSubmit={save} className="card p-5 space-y-4"><h2 className="font-medium">{editing?'Update':'Create'} {tab}</h2><div className="grid gap-4 md:grid-cols-2">
             {tab==='terms'&&<><Input label="Term name" value={form.name} onChange={v=>change('name',v)}/><Input label="Future attendance minimum (%)" type="number" value={form.minimumAttendancePercent ?? 75} onChange={v=>change("minimumAttendancePercent",v)}/><Input label="Start date" type="date" value={form.startDate} onChange={v=>change('startDate',v)}/><Input label="End date" type="date" value={form.endDate} onChange={v=>change('endDate',v)}/></>}

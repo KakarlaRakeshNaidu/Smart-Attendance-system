@@ -243,3 +243,17 @@ exports.getAccount = async (req, res) => {
         return respondError(res, error);
     }
 };
+
+// Reissue only an unfinished invitation; account role, password and profile links remain unchanged.
+exports.reissueInvitation = async (req,res) => {
+    try {
+        const account=await Account.findById(req.params.accountId).select('+activationTokenHash +activationTokenExpiry');
+        if(!account)return res.status(404).json({success:false,message:'Account not found'});
+        if(account.role==='admin'||account.isActive||!account.activationTokenHash)return res.status(409).json({success:false,message:'Only pending Student or Teacher invitations can be reissued.'});
+        const previous=account.activationTokenHash;
+        const token=account.generateActivationToken(4320);
+        const changed=await Account.findOneAndUpdate({_id:account._id,isActive:false,activationTokenHash:previous},{$set:{activationTokenHash:account.activationTokenHash,activationTokenExpiry:account.activationTokenExpiry}},{new:true}).select('+activationTokenHash');
+        if(!changed)return res.status(409).json({success:false,message:'Invitation changed. Refresh before trying again.'});
+        res.json({success:true,message:'Invitation reissued. Previous unused activation links no longer work.',account:changed.toPublicJSON(),...(devModeActive()?{_devOnly_activationToken:token}:{note:'Use the existing out-of-band activation handoff. Development handoff is disabled.'})});
+    } catch(e) {respondError(res,e);}
+};

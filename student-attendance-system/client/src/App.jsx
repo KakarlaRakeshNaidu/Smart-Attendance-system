@@ -20,6 +20,7 @@ import EditProfile from './components/Profile/EditProfile';
 import StudentDashboard from './components/Student/StudentDashboard';
 import { MyCourses, MyCourse, MySession, MyAttendance, MyProfile } from './components/Student/StudentPortalPages';
 import AdminDashboard from './components/Admin/AdminDashboard';
+import { AdminDirectory, AdminProfileDetail, AdminAccountDetail, AdminAttendance } from './components/Admin/AdminPortalPages';
 import { useAuth } from './context/authContextState';
 
 // Role-based root redirect
@@ -117,7 +118,11 @@ const App = () => {
                             </PrivateRoute>
                         } />
 
-                        <Route path="/academic" element={<PrivateRoute>{role === 'student' ? <MyCourses /> : <AcademicHome />}</PrivateRoute>} />
+                        <Route path="/admin/:kind" element={<PrivateRoute roles={['admin']}><AdminDirectory /></PrivateRoute>} />
+<Route path="/admin/accounts/:id" element={<PrivateRoute roles={['admin']}><AdminAccountDetail /></PrivateRoute>} />
+<Route path="/admin/:kind/:id" element={<PrivateRoute roles={['admin']}><AdminProfileDetail /></PrivateRoute>} />
+<Route path="/admin/attendance" element={<PrivateRoute roles={['admin']}><AdminAttendance /></PrivateRoute>} />
+<Route path="/academic" element={<PrivateRoute>{role === 'student' ? <MyCourses /> : <AcademicHome />}</PrivateRoute>} />
                         <Route path="/academic/offerings/:id" element={<PrivateRoute>{role === 'student' ? <MyCourse /> : <OfferingDetail />}</PrivateRoute>} />
                         <Route path="/academic/sessions/:id" element={<PrivateRoute>{role === 'student' ? <MySession /> : <SessionAttendance />}</PrivateRoute>} />
                         <Route path="/legacy-attendance" element={<PrivateRoute><LegacyAttendance /></PrivateRoute>} />
