@@ -31,6 +31,7 @@ Three services start automatically:
 | Node.js | ≥ 14.0.0 | For server and client |
 | Python | ≥ 3.8 | For face recognition API |
 | MongoDB | Atlas or local | Connection string in `.env` |
+| HF Token | — | Required for HuggingFace Space API (set `HF_TOKEN` in `.env`) |
 | Webcam | — | Required for live face recognition |
 
 ---
@@ -58,6 +59,8 @@ MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/attendance_system
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=7d
 FACE_API_URL=http://localhost:5001/api
+HF_TOKEN=hf_your_token_here
+FRONTEND_URL=https://your-deployed-frontend.vercel.app
 ```
 
 Edit `student-attendance-system/client/.env`:
@@ -65,6 +68,8 @@ Edit `student-attendance-system/client/.env`:
 VITE_API_URL=http://localhost:5000/api
 VITE_API_BASE_URL=http://localhost:5000
 ```
+
+> 💡 Get your `HF_TOKEN` at https://huggingface.co/settings/tokens — required to avoid ZeroGPU rate limits on the face recognition Space.
 
 ### 4. Run the project
 ```bash
@@ -131,8 +136,11 @@ smart-attendance/
     │       │   │   └── PhotoUpload.jsx    ← Upload profile photo
     │       │   │
     │       │   └── common/
-    │       │       ├── Navbar.jsx         ← Navigation bar
+    │       │       ├── Navbar.jsx         ← Navigation bar (responsive, hamburger menu)
+    │       │       ├── Sidebar.jsx        ← Slide-in drawer on mobile, fixed on desktop
     │       │       ├── Loader.jsx         ← Loading spinner
+    │       │       ├── PageSkeleton.jsx   ← Full-page skeleton loader
+    │       │       ├── Skeleton.jsx       ← Inline skeleton placeholder
     │       │       └── PrivateRoute.jsx   ← Auth guard
     │       │
     │       ├── context/
@@ -162,8 +170,9 @@ smart-attendance/
         ├── python/                       ── Face Recognition Service (port 5001) ──
         │   ├── api_server.py             ← Flask REST API
         │   ├── requirements.txt          ← Python dependencies
+        │   ├── Dockerfile                ← Container image for Python service
         │   └── models/
-        │       └── insightface_model.py  ← InsightFace model loader
+        │       └── hf_model.py           ← HuggingFace Gradio Space client
         │
         └── src/
             ├── app.js                    ← Express app setup & static serving
@@ -208,16 +217,11 @@ smart-attendance/
 
 ## Face Recognition Model
 
-### Model: InsightFace `buffalo_l`
+### Model: HuggingFace Gradio Space (`nitishsaini44/baffaloL_model`)
 
-The system uses **InsightFace** (`buffalo_l` pack) — a state-of-the-art deep learning face analysis framework that runs entirely locally with no cloud dependency.
+The system uses a **remote HuggingFace Gradio Space** for face detection and embedding extraction — no heavy local GPU/model files required. The Python server calls the Space via `gradio_client` and receives 512-dim face embeddings in return.
 
-#### Sub-models in `buffalo_l`
-
-| Model File | Task | Input Size |
-|------------|------|-----------|
-| `det_10g.onnx` | Face Detection | Dynamic (640×640 default) |
-| `w600k_r50.onnx` | Face Recognition (ResNet-50) | 112×112 |
+> 🔗 Space: https://huggingface.co/spaces/nitishsaini44/baffaloL_model
 
 #### Embedding & Matching
 
@@ -227,8 +231,8 @@ The system uses **InsightFace** (`buffalo_l` pack) — a state-of-the-art deep l
 | **Similarity metric** | Cosine similarity |
 | **Recognition threshold** | `0.5` (configurable) |
 | **Batch method** | Vectorized matrix multiplication (NumPy BLAS) |
-| **Detection size** | 640 × 640 px |
-| **Hardware** | Auto GPU (CUDA) → fallback to CPU |
+| **Hardware** | ZeroGPU on HuggingFace Space (GPU-accelerated) |
+| **Auth** | `HF_TOKEN` env var (avoids ZeroGPU rate limits) |
 
 #### How Recognition Works
 
@@ -236,20 +240,19 @@ The system uses **InsightFace** (`buffalo_l` pack) — a state-of-the-art deep l
 Webcam frame (base64)
         │
         ▼
-┌─────────────────────┐
-│  det_10g.onnx       │  ← Detect face bounding boxes
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│  w600k_r50.onnx     │  ← Extract 512-dim embedding vector
-└─────────┬───────────┘
-          │
-          ▼
+  Raw image bytes
+        │
+        ▼
+┌──────────────────────────────┐
+│  HuggingFace Gradio Space    │  ← Remote API call via gradio_client
+│  nitishsaini44/baffaloL_model│  ← Detects faces + extracts embeddings
+└──────────────┬───────────────┘
+               │  [{bbox: [...], embedding: [...512 floats]}, ...]
+               ▼
   Cosine Similarity vs all registered students
   (parallelized: one matrix multiply for N students × M faces)
-          │
-          ▼
+               │
+               ▼
   Best match score > 0.5  →  Student identified ✅
   Best match score ≤ 0.5  →  Unknown face ❌
 ```
@@ -257,21 +260,21 @@ Webcam frame (base64)
 #### Enrollment Flow
 1. Student added to MongoDB via Node.js API
 2. Face image sent to Python `/api/add-student`
-3. InsightFace extracts 512-dim embedding
+3. HuggingFace Space extracts 512-dim embedding
 4. Embedding saved to `Student.faceEmbedding[]` in MongoDB
 
 #### Recognition Flow (Single Face)
 1. Camera captures frame → base64 encoded
 2. Node.js `POST /api/attendance/face` → Python `/api/recognize`
-3. InsightFace detects & embeds the face
+3. HF Space detects & embeds the face
 4. Vectorized cosine similarity against all enrolled students
 5. Best match above threshold → attendance marked in MongoDB
 
 #### Recognition Flow (Multiple Faces)
 1. Full classroom photo → base64 encoded
-2. Python `/api/recognize-multiple` detects all faces simultaneously
-3. All face embeddings stacked into matrix `(N_faces × 512)`
-4. All student embeddings stacked into matrix `(N_students × 512)`
+2. Python `/api/recognize-multiple` sends image to HF Space
+3. Space returns all detected face embeddings
+4. All embeddings stacked into matrix `(N_faces × 512)`
 5. Single matrix multiply gives all `N_faces × N_students` similarities at once
 6. Each face matched to highest-scoring student above threshold
 
@@ -279,14 +282,12 @@ Webcam frame (base64)
 
 ```txt
 numpy          ← Vectorized embedding math
-opencv-python  ← Image decode & preprocessing (cv2)
-torch          ← PyTorch backend for ONNX model inference
-insightface    ← buffalo_l model pack (detection + recognition)
-onnxruntime    ← Runs the .onnx sub-models
+gradio_client  ← Client for HuggingFace Gradio Space API
 flask          ← REST API server
 flask-cors     ← Cross-origin support for Node.js requests
 pymongo        ← MongoDB driver
 python-dotenv  ← Auto-loads server/.env at startup
+gunicorn       ← Production WSGI server
 ```
 
 ---
@@ -294,10 +295,10 @@ python-dotenv  ← Auto-loads server/.env at startup
 ## Key Features
 
 ### 🎯 Face Recognition (AI-Powered)
-- **InsightFace** `buffalo_l` model — same technology used in production-grade systems
+- **HuggingFace Gradio Space** (`nitishsaini44/baffaloL_model`) — GPU-accelerated remote inference, no local model files needed
 - Real-time webcam capture with live preview
 - Single-student attendance OR full classroom batch recognition
-- Vectorized similarity for fast recognition regardless of student count
+- Vectorized cosine similarity for fast recognition regardless of student count
 
 ### 📋 Attendance Management
 - Manual tab — checkbox-based marking for all students
@@ -322,10 +323,11 @@ python-dotenv  ← Auto-loads server/.env at startup
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | React 18, Vite, React Router, Axios |
-| **Styling** | Vanilla CSS with custom design tokens (teal palette) |
+| **Styling** | Tailwind CSS with custom design tokens |
 | **Backend API** | Node.js, Express.js, JWT Auth, Multer |
-| **Face Recognition** | Python 3.8+, Flask, InsightFace (`buffalo_l`), OpenCV, ONNX Runtime |
+| **Face Recognition** | Python 3.8+, Flask, HuggingFace Gradio Space (`gradio_client`), Gunicorn |
 | **Database** | MongoDB Atlas with Mongoose ODM |
+| **Deployment** | Docker (Python service), Vercel (client) |
 | **Orchestration** | `concurrently` — all 3 services via single `npm run dev` |
 
 ---
@@ -396,6 +398,8 @@ python-dotenv  ← Auto-loads server/.env at startup
 | `JWT_SECRET` | JWT signing secret | — |
 | `JWT_EXPIRES_IN` | JWT token lifespan | `7d` |
 | `FACE_API_URL` | Python face API base URL | `http://localhost:5001/api` |
+| `HF_TOKEN` | HuggingFace API token for Gradio Space | — |
+| `FRONTEND_URL` | Deployed frontend origin (for CORS) | — |
 
 ### Client (`client/.env`)
 | Variable | Description | Default |

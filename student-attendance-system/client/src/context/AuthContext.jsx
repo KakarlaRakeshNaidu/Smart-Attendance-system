@@ -5,7 +5,16 @@ import authService from '../services/authService';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [teacher, setTeacher] = useState(null);
+    // Read teacher from localStorage synchronously — app renders instantly,
+    // background verify call updates/clears it if token is invalid.
+    const [teacher, setTeacher] = useState(() => {
+        try {
+            const stored = localStorage.getItem('teacher');
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    });
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -20,16 +29,24 @@ export const AuthProvider = ({ children }) => {
                 const response = await authService.getMe();
                 if (response.success) {
                     setTeacher(response.teacher);
+                    localStorage.setItem('teacher', JSON.stringify(response.teacher));
+                } else {
+                    setTeacher(null);
+                    localStorage.removeItem('teacher');
                 }
+            } else {
+                setTeacher(null);
             }
         } catch (error) {
             console.error('Auth check failed:', error);
             localStorage.removeItem('token');
             localStorage.removeItem('teacher');
+            setTeacher(null);
         } finally {
             setLoading(false);
         }
     };
+
 
     const login = async (email, password) => {
         const response = await authService.login(email, password);

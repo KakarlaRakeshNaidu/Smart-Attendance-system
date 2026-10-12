@@ -79,3 +79,4 @@ coverage/
 *.local
 *.orig
 .cache/
+/IS.md

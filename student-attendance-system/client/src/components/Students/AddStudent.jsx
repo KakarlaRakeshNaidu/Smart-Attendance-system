@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import studentService from '../../services/studentService';
-import { User, Mail, Hash, BookOpen, Users, ArrowLeft, Upload, Camera, X, Check, ImagePlus } from 'lucide-react';
+import { User, Mail, Hash, BookOpen, Users, ArrowLeft, Upload, Camera, X, Check, ImagePlus, FlipHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AddStudent = () => {
@@ -19,6 +19,7 @@ const AddStudent = () => {
     const [loading, setLoading] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
+    const [facingMode, setFacingMode] = useState('user');
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -36,15 +37,19 @@ const AddStudent = () => {
         }
     };
 
-    const startCamera = useCallback(async () => {
+    const startCamera = useCallback(async (facing = facingMode) => {
+        // Stop any existing stream first
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
+        }
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 } }
             });
             setCameraStream(stream);
             setShowCamera(true);
 
-            // Wait for next tick to ensure video element is rendered
             setTimeout(() => {
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -55,7 +60,7 @@ const AddStudent = () => {
             toast.error('Failed to access camera. Please allow camera permissions.');
             console.error('Camera error:', error);
         }
-    }, []);
+    }, [cameraStream, facingMode]);
 
     const stopCamera = useCallback(() => {
         if (cameraStream) {
@@ -65,12 +70,18 @@ const AddStudent = () => {
         setShowCamera(false);
     }, [cameraStream]);
 
+    const flipCamera = async () => {
+        const newFacing = facingMode === 'user' ? 'environment' : 'user';
+        setFacingMode(newFacing);
+        await startCamera(newFacing);
+        toast.success(newFacing === 'user' ? 'Switched to front camera' : 'Switched to back camera');
+    };
+
     const captureFace = useCallback(() => {
         if (!videoRef.current || !canvasRef.current) return;
 
         const video = videoRef.current;
 
-        // Check if video is ready
         if (video.readyState < 2) {
             toast.error('Camera not ready. Please wait a moment and try again.');
             return;
@@ -79,7 +90,6 @@ const AddStudent = () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
 
-        // Use actual video dimensions
         const width = video.videoWidth || 640;
         const height = video.videoHeight || 480;
 
@@ -151,28 +161,28 @@ const AddStudent = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fadeIn">
             <div>
-                <Link to="/students" className="inline-flex items-center text-gray-600 hover:text-gray-800">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
+                <Link to="/students" className="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition-colors">
+                    <ArrowLeft className="h-4 w-4" />
                     Back to Students
                 </Link>
             </div>
 
-            <div className="bg-card border border-gray-200 shadow-sm rounded-lg p-6">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
                 <h1 className="text-title mb-6">Add New Student</h1>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Profile Photo */}
                     <div className="flex flex-col items-center mb-6">
-                        <div className="w-24 h-24 rounded-full bg-bgSoft flex items-center justify-center overflow-hidden mb-3">
+                        <div className="w-24 h-24 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden mb-3">
                             {previewUrl ? (
                                 <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                             ) : (
-                                <User className="h-12 w-12 text-gray-400" />
+                                <User className="h-12 w-12 text-zinc-500" />
                             )}
                         </div>
-                        <label className="cursor-pointer text-primary hover:text-accent flex items-center gap-2">
+                        <label className="cursor-pointer flex items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all">
                             <Upload className="h-4 w-4" />
                             <span>Upload Photo</span>
                             <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
@@ -180,15 +190,15 @@ const AddStudent = () => {
                     </div>
 
                     {/* Face Recognition Capture */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 bg-gray-50">
-                        <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                    <div className="rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 p-4">
+                        <h3 className="text-sm font-medium text-zinc-300 mb-3 flex items-center gap-2">
                             <Camera className="h-4 w-4" />
                             Face Recognition Registration (Optional)
                         </h3>
 
                         {showCamera ? (
                             <div className="space-y-3">
-                                <div className="relative rounded-lg overflow-hidden bg-black">
+                                <div className="relative rounded-xl overflow-hidden bg-black">
                                     <video
                                         ref={videoRef}
                                         autoPlay
@@ -196,6 +206,16 @@ const AddStudent = () => {
                                         muted
                                         className="w-full h-48 object-cover"
                                     />
+                                    {/* Camera flip button — mobile only */}
+                                    <button
+                                        type="button"
+                                        onClick={flipCamera}
+                                        className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-2xl border border-zinc-600 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-200 backdrop-blur transition hover:bg-zinc-800 md:hidden"
+                                        aria-label="Flip camera"
+                                    >
+                                        <FlipHorizontal className="h-4 w-4" />
+                                        Flip
+                                    </button>
                                 </div>
                                 <div className="flex gap-2">
                                     <button type="button" onClick={captureFace} className="btn-primary flex-1 flex items-center justify-center gap-2">
@@ -210,25 +230,25 @@ const AddStudent = () => {
                             </div>
                         ) : facePreview ? (
                             <div className="space-y-3">
-                                <div className="relative rounded-lg overflow-hidden">
+                                <div className="relative rounded-xl overflow-hidden">
                                     <img
                                         src={facePreview}
                                         alt="Captured face"
                                         className="w-full h-48 object-cover"
                                     />
                                     <div className="absolute top-2 right-2">
-                                        <span className="bg-success text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
+                                        <span className="bg-emerald-600 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
                                             <Check className="h-3 w-3" />
                                             Face Captured
                                         </span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button type="button" onClick={startCamera} className="btn-secondary flex-1 flex items-center justify-center gap-2">
+                                    <button type="button" onClick={() => startCamera()} className="btn-secondary flex-1 flex items-center justify-center gap-2">
                                         <Camera className="h-4 w-4" />
                                         Retake
                                     </button>
-                                    <button type="button" onClick={clearFaceImage} className="btn-secondary flex items-center justify-center gap-2 text-danger">
+                                    <button type="button" onClick={clearFaceImage} className="btn-secondary flex items-center justify-center gap-2 text-red-400 hover:text-red-300">
                                         <X className="h-4 w-4" />
                                         Remove
                                     </button>
@@ -236,18 +256,22 @@ const AddStudent = () => {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <div className="flex gap-3">
-                                    <button type="button" onClick={startCamera} className="flex-1 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition flex flex-col items-center gap-2 text-gray-500 hover:text-primary">
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => startCamera()}
+                                        className="flex-1 py-5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50 transition flex flex-col items-center gap-2 text-zinc-500 hover:text-zinc-300"
+                                    >
                                         <Camera className="h-8 w-8" />
                                         <span className="text-sm">Use Camera</span>
                                     </button>
-                                    <label className="flex-1 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-success hover:bg-success/5 transition flex flex-col items-center gap-2 text-gray-500 hover:text-success cursor-pointer">
+                                    <label className="flex-1 py-5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-emerald-700 hover:bg-emerald-900/10 transition flex flex-col items-center gap-2 text-zinc-500 hover:text-emerald-400 cursor-pointer">
                                         <ImagePlus className="h-8 w-8" />
                                         <span className="text-sm">Upload Image</span>
                                         <input type="file" accept="image/*" onChange={handleFaceImageUpload} className="hidden" />
                                     </label>
                                 </div>
-                                <p className="text-xs text-gray-500 text-center">
+                                <p className="text-xs text-zinc-500 text-center">
                                     Capture or upload a clear photo of the student's face
                                 </p>
                             </div>
@@ -255,102 +279,103 @@ const AddStudent = () => {
                         <canvas ref={canvasRef} className="hidden" />
                     </div>
 
+                    {/* Form fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">
                                 Student ID *
                             </label>
                             <div className="relative">
-                                <Hash className="absolute left-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="text"
                                     name="studentId"
                                     value={formData.studentId}
                                     onChange={handleChange}
                                     required
-                                    className="input-field pl-12"
+                                    className="input-field pl-10"
                                     placeholder="e.g., KUEC20xx"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">
                                 Full Name *
                             </label>
                             <div className="relative">
-                                <User className="absolute left-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="text"
                                     name="name"
                                     value={formData.name}
                                     onChange={handleChange}
                                     required
-                                    className="input-field pl-12"
+                                    className="input-field pl-10"
                                     placeholder="Enter student name"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">
                                 Email (Optional)
                             </label>
                             <div className="relative">
-                                <Mail className="absolute left-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="email"
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="input-field pl-12"
+                                    className="input-field pl-10"
                                     placeholder="student@email.com"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">
                                 Class
                             </label>
                             <div className="relative">
-                                <BookOpen className="absolute left-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                                <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="text"
                                     name="class"
                                     value={formData.class}
                                     onChange={handleChange}
-                                    className="input-field pl-12"
+                                    className="input-field pl-10"
                                     placeholder="e.g., 10th, 12th"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">
                                 Section
                             </label>
                             <div className="relative">
-                                <Users className="absolute left-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <input
                                     type="text"
                                     name="section"
                                     value={formData.section}
                                     onChange={handleChange}
-                                    className="input-field pl-12"
+                                    className="input-field pl-10"
                                     placeholder="e.g., A, B, C"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4">
                         <button type="button" onClick={() => navigate('/students')} className="btn-secondary flex-1">
                             Cancel
                         </button>
                         <button type="submit" disabled={loading} className="btn-primary flex-1 flex items-center justify-center">
                             {loading ? (
-                                <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 'Add Student'
                             )}
