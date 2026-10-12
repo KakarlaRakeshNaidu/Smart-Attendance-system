@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const PhotoUpload = ({ onAttendanceMarked }) => {
+const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
     const fileInputRef = useRef(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviewers] = useState([]);
@@ -88,7 +88,7 @@ const PhotoUpload = ({ onAttendanceMarked }) => {
 
                 const response = await attendanceService.bulkPhotoAttendance({
                     image: imageBase64
-                });
+                }, sessionId);
 
                 if (response.success && response.recognized) {
                     response.recognized.forEach(student => {

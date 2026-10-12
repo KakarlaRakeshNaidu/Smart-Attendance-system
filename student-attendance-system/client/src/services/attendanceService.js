@@ -1,5 +1,10 @@
 import api from './api';
 
+async function sessionRecognition(sessionId, image, mode, method) {
+    const { data } = await api.post('/academic/sessions/' + sessionId + '/recognise', { image, mode, method });
+    const recognized = data.recognized || [];
+    return { ...data, student:recognized[0], markedStudents:recognized, recognized, alreadyMarked:false };
+}
 const attendanceService = {
     takeAttendance: async (attendanceData) => {
         const response = await api.post('/attendance', attendanceData);
@@ -77,21 +82,24 @@ const attendanceService = {
     },
 
     // Face Recognition Attendance
-    takeFaceAttendance: async (imageBase64) => {
+    takeFaceAttendance: async (imageBase64, sessionId) => {
+        if (sessionId) return sessionRecognition(sessionId,imageBase64,"single","face");
         const response = await api.post('/attendance/face', {
             image: imageBase64
         });
         return response.data;
     },
 
-    takeMultipleFaceAttendance: async (imageBase64) => {
+    takeMultipleFaceAttendance: async (imageBase64, sessionId) => {
+        if (sessionId) return sessionRecognition(sessionId,imageBase64,"multiple","face");
         const response = await api.post('/attendance/face-multiple', {
             image: imageBase64
         });
         return response.data;
     },
 
-    bulkPhotoAttendance: async (data) => {
+    bulkPhotoAttendance: async (data, sessionId) => {
+        if (sessionId) return sessionRecognition(sessionId,data.image,"multiple","photo");
         const response = await api.post('/attendance/bulk-photos', data);
         return response.data;
     },

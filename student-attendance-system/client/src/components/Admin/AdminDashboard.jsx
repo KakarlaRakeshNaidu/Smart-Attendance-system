@@ -80,7 +80,9 @@ const AdminDashboard = () => {
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                    <Link to="/students" className="btn-secondary px-4 py-2 text-sm">Students</Link>
+                    <Link to="/academic" className="btn-primary mb-4 inline-block mr-3">Academic management</Link>
+            <Link to="/legacy-attendance" className="btn-secondary mb-4 inline-block mr-3">Legacy attendance</Link>
+            <Link to="/students" className="btn-secondary px-4 py-2 text-sm">Students</Link>
                     <Link to="/change-password" className="btn-secondary px-4 py-2 text-sm">Change password</Link>
                     <button
                         id="admin-create-account-btn"

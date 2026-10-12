@@ -1,5 +1,7 @@
 # Smart Attendance System
 
+Current course/class and session-attendance workflow: [UPGRADE2.md](UPGRADE2.md). Teachers must select an assigned lecture session before marking. Historical Teacher/date records remain under Legacy attendance. Older date-only workflow descriptions below refer to legacy behavior.
+
 A modern, AI-powered attendance management system featuring **face recognition** technology. Built with React, Node.js, and Python — run the entire project with a **single command**.
 
 ---

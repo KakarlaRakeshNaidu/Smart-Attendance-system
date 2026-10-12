@@ -13,7 +13,7 @@ import ChangePassword from './components/Auth/ChangePassword';
 import Dashboard from './components/Dashboard/Dashboard';
 import StudentList from './components/Students/StudentList';
 import AddStudent from './components/Students/AddStudent';
-import Attendance from './pages/Attendance';
+import { AcademicHome, OfferingDetail, SessionAttendance, LegacyAttendance } from './components/Academic/AcademicPages';
 import TeacherProfile from './components/Profile/TeacherProfile';
 import EditProfile from './components/Profile/EditProfile';
 import StudentDashboard from './components/Student/StudentDashboard';
@@ -79,7 +79,7 @@ const App = () => {
                         } />
                         <Route path="/attendance" element={
                             <PrivateRoute roles={['teacher']}>
-                                <Attendance />
+                                <Navigate to="/academic" replace />
                             </PrivateRoute>
                         } />
                         <Route path="/profile" element={
@@ -112,6 +112,10 @@ const App = () => {
                             </PrivateRoute>
                         } />
 
+                        <Route path="/academic" element={<PrivateRoute><AcademicHome /></PrivateRoute>} />
+                        <Route path="/academic/offerings/:id" element={<PrivateRoute><OfferingDetail /></PrivateRoute>} />
+                        <Route path="/academic/sessions/:id" element={<PrivateRoute><SessionAttendance /></PrivateRoute>} />
+                        <Route path="/legacy-attendance" element={<PrivateRoute><LegacyAttendance /></PrivateRoute>} />
                         {/* Root redirect */}
                         <Route path="/" element={<RootRedirect />} />
 

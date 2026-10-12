@@ -23,6 +23,10 @@ router.use(validateRequest);
 router.use(protect);
 router.use((req, res, next) => req.userRole === 'teacher' ? requireTeacherProfile(req, res, next) : next());
 
+router.use((req,res,next) => ['POST','DELETE','PATCH','PUT'].includes(req.method)
+    ? res.status(req.userRole === 'teacher' ? 409 : 403).json({success:false,code:'SESSION_REQUIRED',message:'Select an authorised lecture session before marking or resetting attendance. Legacy attendance is read-only.'})
+    : next());
+
 // ?? Teacher-only: mark and reset attendance ??????????????????????????????????
 // Admin cannot mark attendance (per spec: "Cannot mark or reset attendance merely because they are Admin")
 router.post('/', requireRole('teacher'), requireTeacherProfile, takeAttendance);

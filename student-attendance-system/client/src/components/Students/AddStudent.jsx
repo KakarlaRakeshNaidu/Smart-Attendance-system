@@ -178,6 +178,7 @@ const AddStudent = () => {
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
                 <h1 className="text-title mb-6">Add New Student</h1>
+                <p className="text-zinc-400 mb-6">This creates a Student profile. Admin enrolment and authorised account activation are separate steps.</p>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Profile Photo */}

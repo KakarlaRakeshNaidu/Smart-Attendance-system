@@ -92,10 +92,10 @@ def decode_base64_to_bytes(base64_string):
         print(f"Error decoding image: {str(e)}")
         return None
 
-def get_all_students_with_embeddings():
+def get_all_students_with_embeddings(candidate_ids=None):
     """Get all students who have face embeddings registered"""
     # Fetch all students and filter in Python (simpler and more reliable)
-    students = students_collection.find({}, {"studentId": 1, "name": 1, "faceEmbedding": 1})
+    students = students_collection.find({} if candidate_ids is None else {"studentId": {"$in": candidate_ids}}, {"studentId": 1, "name": 1, "faceEmbedding": 1})
 
     result = {}
     for student in students:
@@ -261,7 +261,12 @@ def recognize_face():
             }), 400
 
         # Load students with embeddings from MongoDB
-        students_db = get_all_students_with_embeddings()
+        candidates = data.get('candidateIds')
+        if candidates is not None and (not isinstance(candidates, list) or len(candidates) > 10000 or any(not isinstance(x, str) for x in candidates)):
+            return jsonify(success=False, message="Invalid candidate list"), 400
+        if candidates == []:
+            return jsonify(success=False, message="No eligible session candidates"), 400
+        students_db = get_all_students_with_embeddings() if candidates is None else get_all_students_with_embeddings(candidates)
 
         if len(students_db) == 0:
             return jsonify({
@@ -354,7 +359,12 @@ def recognize_multiple_faces():
             }), 400
 
         # Load students with embeddings from MongoDB
-        students_db = get_all_students_with_embeddings()
+        candidates = data.get('candidateIds')
+        if candidates is not None and (not isinstance(candidates, list) or len(candidates) > 10000 or any(not isinstance(x, str) for x in candidates)):
+            return jsonify(success=False, message="Invalid candidate list"), 400
+        if candidates == []:
+            return jsonify(success=False, message="No eligible session candidates"), 400
+        students_db = get_all_students_with_embeddings() if candidates is None else get_all_students_with_embeddings(candidates)
 
         if len(students_db) == 0:
             return jsonify({

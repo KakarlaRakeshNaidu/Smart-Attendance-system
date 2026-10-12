@@ -22,8 +22,8 @@ async function post(endpoint, payload) {
 module.exports = {
     addStudent: (studentId, name, image) => post('/add-student', { studentId, name, image }),
     removeStudent: studentId => post('/remove-student', { studentId }),
-    recognizeFace: image => post('/recognize', { image }),
-    recognizeMultipleFaces: image => post('/recognize-multiple', { image }),
+    recognizeFace: (image, candidateIds) => post('/recognize', { image, ...(candidateIds === undefined ? {} : { candidateIds }) }),
+    recognizeMultipleFaces: (image, candidateIds) => post('/recognize-multiple', { image, ...(candidateIds === undefined ? {} : { candidateIds }) }),
     getEmbedding: image => post('/get-embedding', { image }),
     checkHealth: async () => {
         try { const { data } = await client.get('/health', { timeout: 3000 }); return data; }

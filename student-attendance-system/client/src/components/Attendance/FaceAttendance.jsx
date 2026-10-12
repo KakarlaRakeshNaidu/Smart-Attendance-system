@@ -3,7 +3,7 @@ import attendanceService from '../../services/attendanceService';
 import { Camera, CameraOff, Users, User, CheckCircle, AlertCircle, Scan } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const FaceAttendance = ({ onAttendanceMarked }) => {
+const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [stream, setStream] = useState(null);
@@ -103,15 +103,15 @@ const FaceAttendance = ({ onAttendanceMarked }) => {
 
             let result;
             if (mode === 'single') {
-                result = await attendanceService.takeFaceAttendance(imageBase64);
+                result = await attendanceService.takeFaceAttendance(imageBase64, sessionId);
             } else {
-                result = await attendanceService.takeMultipleFaceAttendance(imageBase64);
+                result = await attendanceService.takeMultipleFaceAttendance(imageBase64, sessionId);
             }
 
             setLastResult(result);
 
             if (result.success) {
-                if (mode === 'single') {
+                if (mode === 'single' && result.student) {
                     if (result.alreadyMarked) {
                         toast.success(`${result.student.name} already marked present!`);
                     } else {

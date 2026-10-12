@@ -180,6 +180,10 @@ exports.deleteStudent = async (req, res) => {
             });
         }
 
+        const { CourseOffering, LectureSession } = require('../models/Academic');
+        if (await CourseOffering.exists({'enrolments.studentId':student._id}) || await LectureSession.exists({'roster.studentId':student._id})) {
+            return res.status(409).json({success:false,message:'This academic profile is referenced. Withdraw enrolments instead of deleting history.'});
+        }
         // Remove from face recognition database
         if (student.studentId) {
             try {

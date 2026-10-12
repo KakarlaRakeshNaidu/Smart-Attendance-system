@@ -8,6 +8,7 @@ import Loader from '../common/Loader';
 const StudentDashboard = () => {
     const { user, logout } = useAuth();
     const [attendance, setAttendance] = useState([]);
+    const [courseSummaries, setCourseSummaries] = useState([]);
     const [error, setError] = useState('');
     const [profile, setProfile]       = useState(null);
     const [loading, setLoading]        = useState(true);
@@ -15,11 +16,12 @@ const StudentDashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [attRes, profRes] = await Promise.all([
-                    api.get('/attendance/me'),
-                    api.get('/students/me')
+                const [attRes, profRes, summaryRes] = await Promise.all([
+                    api.get('/academic/sessions'),
+                    api.get('/students/me'), api.get('/academic/my-summary')
                 ]);
-                if (attRes.data.success)  setAttendance(attRes.data.attendance || []);
+                if (attRes.data.success)  setAttendance((attRes.data.items || []).map(s=>({date:s.scheduledStart,subject:(s.offering?.course?.code||'')+' · '+(s.offering?.classGroup?.label||'')+' · '+(s.offering?.term?.name||''),status:s.state==='cancelled'?'cancelled':s.records[0]?.status||'not marked',sessionId:s._id})));
+                setCourseSummaries(summaryRes.data.items || []);
                 if (profRes.data.success) setProfile(profRes.data.student);
             } catch (e) {
                 setError(e.response?.data?.message || 'Could not load attendance. Please try again.');
@@ -31,10 +33,6 @@ const StudentDashboard = () => {
     }, []);
 
     if (loading) return <Loader />;
-
-    const presentCount = attendance.filter(a => a.status === 'present' || a.status === 'late').length;
-    const totalCount   = attendance.length;
-    const pct          = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6">
@@ -58,23 +56,47 @@ const StudentDashboard = () => {
             </div>
 
             {error && <div role="alert" className="mb-6 text-red-300">{error}</div>}
+            <Link to="/academic" className="btn-primary mb-6 mr-3 inline-block">My course enrolments</Link>
+            <Link to="/legacy-attendance" className="btn-secondary mb-6 mr-3 inline-block">Legacy attendance</Link>
             <Link to="/change-password" className="btn-secondary mb-6 inline-block">Change password</Link>
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div className="card p-5">
-                    <p className="text-zinc-400 text-sm mb-1">Attendance %</p>
-                    <p className="text-3xl font-bold text-white">{pct}%</p>
-                </div>
-                <div className="card p-5">
-                    <p className="text-zinc-400 text-sm mb-1">Classes Present</p>
-                    <p className="text-3xl font-bold text-emerald-400">{presentCount}</p>
-                </div>
-                <div className="card p-5">
-                    <p className="text-zinc-400 text-sm mb-1">Total Classes</p>
-                    <p className="text-3xl font-bold text-white">{totalCount}</p>
-                </div>
+            <div className="card p-5 mb-8">
+                <h2 className="text-white font-semibold mb-2">Attendance by course</h2>
+                <p className="text-zinc-400 text-sm mb-4">Each course, term and class is calculated separately. Only eligible completed, finalised lectures count; late counts as present.</p>
+                {courseSummaries.length === 0 ? (
+                    <p className="text-zinc-500 text-sm">No course enrolments found.</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="text-zinc-500 border-b border-zinc-800">
+                                    <th className="text-left pb-3 pr-4">Course</th>
+                                    <th className="text-left pb-3 pr-4">Term / class</th>
+                                    <th className="text-left pb-3 pr-4">Present / late</th>
+                                    <th className="text-left pb-3">Attendance</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-800/50">
+                                {courseSummaries.map(item => (
+                                    <tr key={item.offeringId}>
+                                        <td className="py-3 pr-4 text-white">
+                                            <Link to={'/academic/offerings/' + item.offeringId} className="hover:underline">
+                                                {item.course?.code || 'Unavailable course'}
+                                                <span className="block text-zinc-400">{item.course?.name || ''}</span>
+                                            </Link>
+                                        </td>
+                                        <td className="py-3 pr-4 text-zinc-400">
+                                            {item.term?.name || 'Unavailable term'}
+                                            <span className="block">{item.classGroup?.label || 'Unavailable class'} {item.classGroup?.section || ''}</span>
+                                        </td>
+                                        <td className="py-3 pr-4 text-emerald-400">{item.present} / {item.total} sessions</td>
+                                        <td className="py-3 text-white font-semibold">{item.percentage === null ? 'No completed sessions' : item.percentage + '%'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
-
             {/* Profile */}
             {profile && (
                 <div className="card p-5 mb-8">
@@ -93,7 +115,7 @@ const StudentDashboard = () => {
             {/* Attendance list */}
             <div className="card p-5">
                 <h2 className="text-sm font-medium text-zinc-400 mb-4 flex items-center gap-2">
-                    <CalendarCheck className="h-4 w-4" /> My Attendance History
+                    <CalendarCheck className="h-4 w-4" /> My Lecture Attendance (Asia/Kolkata)
                 </h2>
                 {attendance.length === 0 ? (
                     <p className="text-zinc-500 text-sm">No attendance records found.</p>
@@ -111,9 +133,9 @@ const StudentDashboard = () => {
                                 {attendance.map((rec, i) => (
                                     <tr key={i}>
                                         <td className="py-3 text-zinc-300">
-                                            {new Date(rec.date).toLocaleDateString()}
+                                            {new Date(rec.date).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})}
                                         </td>
-                                        <td className="py-3 text-zinc-400">{rec.subject || '-'}</td>
+                                        <td className="py-3 text-zinc-400"><Link to={'/academic/sessions/'+rec.sessionId}>{rec.subject || '-'}</Link></td>
                                         <td className="py-3">
                                             <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
                                                 rec.status === 'present' ? 'bg-emerald-500/15 text-emerald-400' :

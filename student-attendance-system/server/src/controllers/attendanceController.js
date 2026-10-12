@@ -1,28 +1,29 @@
 const respondError = require('../utils/respondError');
 const Attendance = require('../models/Attendance');
 const Student = require('../models/Student');
-const { generateAttendanceCSV, generateFullAttendanceCSV } = require('../services/csvService');
 const faceRecognitionService = require('../services/faceRecognitionService');
 
 const attendanceScope = req => req.userRole === 'admin'
     ? (req.query.teacherId ? { teacherId: req.query.teacherId } : {})
     : { teacherId: req.teacherId };
-const generateAdminCSV = (documents, students) => {
-    const { createObjectCsvStringifier } = require('csv-writer');
-    const csv = createObjectCsvStringifier({ header: ['Date', 'Teacher ID', 'Subject', 'Class', 'Section', 'Student ID', 'Name', 'Status'].map(title => ({ id: title, title })) });
-    const rows = [];
-    for (const doc of documents) {
-        const group = students.filter(s => (!doc.class || s.class === doc.class) && (!doc.section || s.section === doc.section));
-        const included = new Set();
-        const add = (id, name, status) => rows.push({ Date: doc.date.toISOString().slice(0,10), 'Teacher ID': String(doc.teacherId), Subject: doc.subject, Class: doc.class, Section: doc.section, 'Student ID': id, Name: name, Status: status });
-        for (const student of group) {
-            const record = doc.records.find(r => String(r.studentId) === String(student._id));
-            add(student.studentId, student.name, record?.status || 'absent');
-            included.add(student.studentId);
-        }
-        for (const record of doc.records) if (!included.has(record.studentRollNo)) add(record.studentRollNo, record.studentName, record.status);
-    }
-    return csv.getHeaderString() + csv.stringifyRecords(rows);
+// Legacy exports preserve individual document identity; never merge same-day records or invent calendar absence.
+const legacyCSV = documents => {
+    const columns=['Record type','Legacy record ID','Timestamp','Teacher ID','Subject','Class','Section','Student ID','Name','Status'];
+    const escape = value => '"' + (/^[=+@-]/.test(String(value??'')) ? "'" : '') + String(value??'').replace(/"/g,'""') + '"';
+    const rows=[];
+    for(const doc of documents) for(const r of doc.records) rows.push(['Legacy attendance',String(doc._id),doc.date.toISOString(),String(doc.teacherId),doc.subject,doc.class,doc.section,r.studentRollNo,r.studentName,r.status]);
+    return [columns,...rows].map(row=>row.map(escape).join(',')).join('\r\n');
+};
+const campusLegacyRange = value => {
+    const A=require('../services/academicService');
+    const date=A.day(value);
+    return {start:new Date(date+'T00:00:00+05:30'),end:new Date(date+'T23:59:59.999+05:30')};
+};
+const exportLegacy = async(req,res,from,to) => {
+    const start=campusLegacyRange(from).start,end=campusLegacyRange(to).end;
+    if(start>end || end-start>367*86400000) throw {status:400,publicMessage:'Choose an ordered range of at most 366 days.'};
+    const documents=await Attendance.find({...attendanceScope(req),date:{$gte:start,$lte:end}}).sort({date:1,_id:1});
+    res.set({'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="legacy-attendance.csv"'}).send(legacyCSV(documents));
 };
 
 // Helper to get start and end of day
@@ -182,210 +183,17 @@ exports.getAllAttendance = async (req, res) => {
 // @desc    Download today's attendance as CSV
 // @route   GET /api/attendance/download/today
 // @access  Private
-exports.downloadTodayAttendanceCSV = async (req, res) => {
-    try {
-        const today = new Date();
-        const { start, end } = getDateRange(today);
-
-        // Get all students
-        const allStudents = await Student.find().sort({ studentId: 1 });
-        
-        if (allStudents.length === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'No students found in the system' 
-            });
-        }
-
-        if (req.userRole === 'admin') {
-            const documents = await Attendance.find({ ...attendanceScope(req), date: { $gte: start, $lte: end } });
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', 'attachment; filename=attendance_today.csv');
-            return res.send(generateAdminCSV(documents, allStudents));
-        }
-        // Get today's attendance
-        const attendance = await Attendance.findOne({
-            ...attendanceScope(req),
-            date: { $gte: start, $lte: end }
-        });
-
-        const attendanceRecords = attendance ? attendance.records : [];
-        const csvData = generateFullAttendanceCSV(allStudents, attendanceRecords, today);
-        const dateStr = today.toISOString().split('T')[0];
-
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename=attendance_${dateStr}.csv`);
-        res.status(200).send(csvData);
-    } catch (error) {
-        return respondError(res, error);
-    }
+exports.downloadTodayAttendanceCSV=async(req,res)=>{
+    try {const date=require('../services/academicService').campusDate(new Date());await exportLegacy(req,res,date,date);}
+    catch(error){respondError(res,error);}
 };
-
-// @desc    Download attendance by date as CSV
-// @route   GET /api/attendance/download/:date
-// @access  Private
-exports.downloadAttendanceCSV = async (req, res) => {
-    try {
-        const date = new Date(req.params.date);
-        const { start, end } = getDateRange(date);
-
-
-
-        // Get all students
-        const allStudents = await Student.find().sort({ studentId: 1 });
-        
-        if (allStudents.length === 0) {
-            console.warn('No students found in system');
-        }
-
-        if (req.userRole === 'admin') {
-            const documents = await Attendance.find({ ...attendanceScope(req), date: { $gte: start, $lte: end } });
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', 'attachment; filename=attendance_date.csv');
-            return res.send(generateAdminCSV(documents, allStudents));
-        }
-        // Get attendance for the date
-        const attendance = await Attendance.findOne({
-            ...attendanceScope(req),
-            date: { $gte: start, $lte: end }
-        });
-
-        const attendanceRecords = attendance ? attendance.records : [];
-        
-        try {
-            const csvData = generateFullAttendanceCSV(allStudents, attendanceRecords, date);
-            const dateStr = date.toISOString().split('T')[0];
-
-
-            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-            res.setHeader('Content-Disposition', `attachment; filename="attendance_${dateStr}.csv"`);
-            res.status(200).send(csvData);
-        } catch (csvError) {
-            console.error('Error generating CSV:', csvError.message);
-            throw csvError;
-        }
-    } catch (error) {
-        console.error('Error in downloadAttendanceCSV:', error.message);
-        return respondError(res, error);
-    }
+exports.downloadAttendanceCSV=async(req,res)=>{
+    try {await exportLegacy(req,res,req.params.date,req.params.date);}
+    catch(error){respondError(res,error);}
 };
-
-// @desc    Download attendance by date range as CSV
-// @route   GET /api/attendance/download/range?fromDate=XXX&toDate=YYY
-// @access  Private
-exports.downloadAttendanceCSVRange = async (req, res) => {
-    try {
-        const { fromDate, toDate } = req.query;
-        
-        if (!fromDate || !toDate) {
-            return res.status(400).json({
-                success: false,
-                message: 'Both fromDate and toDate are required'
-            });
-        }
-
-
-        // Safely parse dates
-        const startDate = new Date(fromDate);
-        const endDate = new Date(toDate);
-
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid date format. Use YYYY-MM-DD format.'
-            });
-        }
-
-        if (startDate > endDate) return res.status(400).json({ success: false, message: 'Start date must be before end date.' });
-        if ((endDate - startDate) / 86400000 > 366) return res.status(400).json({ success: false, message: 'Choose a range of at most 366 days.' });
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-
-
-        // Get all students
-        const allStudents = await Student.find().sort({ studentId: 1 });
-
-        // Get all attendance records for the date range
-        const attendanceRecords = await Attendance.find({
-            ...attendanceScope(req),
-            date: { $gte: startDate, $lte: endDate }
-        }).sort({ date: 1 });
-
-
-        if (req.userRole === 'admin') {
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', 'attachment; filename=attendance_range.csv');
-            return res.send(generateAdminCSV(attendanceRecords, allStudents));
-        }
-        // Generate all dates in range (DD-MM-YYYY format)
-        const allDates = [];
-        const currentDate = new Date(startDate);
-        while (currentDate <= endDate) {
-            const dd = String(currentDate.getDate()).padStart(2, '0');
-            const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
-            const yyyy = currentDate.getFullYear();
-            allDates.push(`${dd}-${mm}-${yyyy}`);
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        // Build attendance lookup: { "DD-MM-YYYY": { "studentRollNo": "present"|"absent" } }
-        const attendanceByDate = {};
-        for (const record of attendanceRecords) {
-            if (!record.date) continue;
-            const d = new Date(record.date);
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const yyyy = d.getFullYear();
-            const dateKey = `${dd}-${mm}-${yyyy}`;
-            
-            if (!attendanceByDate[dateKey]) {
-                attendanceByDate[dateKey] = {};
-            }
-            
-            if (record.records && Array.isArray(record.records)) {
-                for (const att of record.records) {
-                    if (att.studentRollNo) {
-                        attendanceByDate[dateKey][att.studentRollNo] = att.status || 'absent';
-                    }
-                }
-            }
-        }
-
-        // Build CSV header: S.No, Student ID, Name, Class, Section, date1, date2, ...
-        let csvData = `S.No,Student ID,Name,Class,Section,${allDates.join(',')}\n`;
-
-        // Build rows: one per student
-        allStudents.forEach((student, index) => {
-            const row = [
-                index + 1,
-                student.studentId,
-                `"${student.name}"`,
-                student.class || 'N/A',
-                student.section || 'N/A'
-            ];
-
-            // Add P or A for each date
-            for (const dateKey of allDates) {
-                const dateAttendance = attendanceByDate[dateKey];
-                if (dateAttendance && ['present', 'late'].includes(dateAttendance[student.studentId])) {
-                    row.push('P');
-                } else {
-                    row.push('A');
-                }
-            }
-
-            csvData += row.join(',') + '\n';
-        });
-        
-        const dateRangeStr = `${fromDate}_to_${toDate}`;
-
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="attendance_${dateRangeStr}.csv"`);
-        res.status(200).send(csvData);
-    } catch (error) {
-        console.error('Error in downloadAttendanceCSVRange:', error.message);
-        return respondError(res, error);
-    }
+exports.downloadAttendanceCSVRange=async(req,res)=>{
+    try {await exportLegacy(req,res,req.query.fromDate,req.query.toDate);}
+    catch(error){respondError(res,error);}
 };
 
 // @desc    Take attendance via face recognition (single face)
