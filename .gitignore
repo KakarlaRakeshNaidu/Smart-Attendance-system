@@ -89,9 +89,9 @@ coverage/
 
 # Disposable test outputs; meaningful source tests remain trackable
 /student-attendance-system/server/scripts/serve-fixtures.js
-/test-results/
-/playwright-report/
-/.vitest/
+test-results/
+playwright-report/
+.vitest/
 
 # Local task reports (README and setup documentation remain tracked)
 /VERIFICATION.md
@@ -103,3 +103,16 @@ coverage/
 !.env.example
 !.env.sample
 !.env.template
+
+# Additional generated test reports and Python tooling caches
+blob-report/
+playwright/.cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.hypothesis/
