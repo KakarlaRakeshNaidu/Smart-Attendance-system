@@ -1,0 +1,12 @@
+const router=require('express').Router();
+const {protect,requireRole}=require('../middleware/authMiddleware');
+const {studentSelfUploader}=require('../middleware/uploadMiddleware');
+const C=require('../controllers/studentPortalController');
+router.use(protect,requireRole('student'));
+router.get('/overview',C.overview);
+router.get('/courses',C.courses);
+router.get('/courses/:id',C.course);
+router.get('/attendance',C.history);
+router.get('/profile',C.profile);
+router.put('/profile/photo',C.preparePhoto,studentSelfUploader.single('profilePhoto'),C.photo);
+module.exports=router;

@@ -44,6 +44,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/academic', require('./routes/academicRoutes'));
 app.use('/api/students', studentRoutes);
+app.use('/api/student-portal', require('./routes/studentPortalRoutes'));
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/teacher', teacherAdminRoutes);
 app.use('/api/teacher', teacherRoutes);

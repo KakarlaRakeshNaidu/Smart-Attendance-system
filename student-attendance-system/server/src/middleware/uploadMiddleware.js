@@ -65,7 +65,14 @@ const studentUploader = createUploader((req) => {
   return `students/${studentId}`;
 });
 
+const studentSelfUploader = createUploader(req => {
+  const id = String(req.studentProfile?._id || '').replace(/[^a-z0-9]/gi, '');
+  if (!id) throw new Error('Student profile is unavailable');
+  return 'students/' + id;
+});
+
 module.exports = {
+  studentSelfUploader,
   teacherUploader,
   studentUploader,
   // legacy default export — keeps old studentRoutes.js working

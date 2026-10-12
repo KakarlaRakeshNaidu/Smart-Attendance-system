@@ -41,6 +41,7 @@ exports.offerings = wrap(async (req,res) => {
         const item = await CourseOffering.create({ courseId: req.body.courseId, termId: req.body.termId, classGroupId: req.body.classGroupId });
         return ok(res,{ item },201);
     }
+    if (req.userRole === 'student') return ok(res,{items:await require('../services/studentPortalService').courses(req)});
     let docs = await A.populated(CourseOffering.find().sort({ createdAt: -1 }));
     if (req.userRole === 'teacher') {
         if (!req.teacherId) A.fail(403,'Teacher profile not linked.');
@@ -60,6 +61,7 @@ exports.offerings = wrap(async (req,res) => {
     ok(res,{ items });
 });
 exports.offeringDetail = wrap(async (req,res) => {
+    if (req.userRole === 'student') { const item=await require('../services/studentPortalService').course(req,req.params.id); const date=req.query.date?A.day(req.query.date):A.campusDate(new Date()); return ok(res,{item,roster:(await A.roster(await A.offering(req.params.id),date)).filter(s=>String(s.studentId)===ownStudent(req))}); }
     const doc = await A.populated(CourseOffering.findById(A.id(req.params.id))); if (!doc) A.fail(404,'Offering not found.');
     const date = req.query.date ? A.day(req.query.date) : A.campusDate(new Date());
     if (req.userRole === 'teacher' && (!A.assigned(doc,req.teacherId,date) || !A.assigned(doc,req.teacherId,A.campusDate(new Date())))) A.fail(403,'No effective assignment for this roster date.');
@@ -107,6 +109,7 @@ exports.createSession = wrap(async (req,res) => {
     ok(res,{ item },201);
 });
 exports.sessions = wrap(async (req,res) => {
+    if (req.userRole === 'student') { const P=require('../services/studentPortalService'); const result=await P.history(req,{...req.query,source:'sessions'}); const docs=await LectureSession.find({_id:{$in:result.items.map(s=>s.sessionId)}}); const byId=new Map(docs.map(s=>[String(s._id),s])); return ok(res,{items:await Promise.all(result.items.map(s=>P.sessionView(req,byId.get(s.sessionId)))),pagination:result.pagination}); }
     const filter = req.query.offeringId ? { offeringId: A.id(req.query.offeringId) } : {};
     if (req.userRole === 'teacher') { if (!req.teacherId) A.fail(403,'Teacher profile not linked.'); filter.teacherId = req.teacherId; }
     let docs = await LectureSession.find(filter).sort({ scheduledStart: -1 });
@@ -211,34 +214,9 @@ exports.exportSession = wrap(async (req,res) => {
     const csv = values => values.map(v => { const value = String(v ?? ''); return '"' + (/^[=+@-]/.test(value) ? "'" + value : value).replace(/"/g,'""') + '"'; }).join(',');
     res.set({ 'Content-Type':'text/csv', 'Content-Disposition':'attachment; filename="session-' + session._id + '.csv"' }).send([header,...rows].map(csv).join('\r\n'));
 });
-exports.mySummary = wrap(async (req,res) => {
-    const mine = ownStudent(req);
-    const docs = await LectureSession.find({ state:'completed', finalised:true, 'roster.studentId':mine })
-        .select('offeringId records').lean();
-    // Include enrolments with no completed lectures and historical frozen rosters,
-    // even if an enrolment was subsequently withdrawn.
-    const offerings = await CourseOffering.find({ $or: [
-        { 'enrolments.studentId':mine }, { _id:{ $in:docs.map(s => s.offeringId) } }
-    ] }).select('courseId termId classGroupId')
-        .populate('courseId','code name').populate('termId','name')
-        .populate('classGroupId','label section').lean();
-    const counts = new Map();
-    for (const s of docs) {
-        const key = String(s.offeringId);
-        const count = counts.get(key) || { total:0, present:0 };
-        count.total++;
-        if (s.records.some(r => String(r.studentId) === mine && ['present','late'].includes(r.status))) count.present++;
-        counts.set(key,count);
-    }
-    const items = offerings.map(o => {
-        const count = counts.get(String(o._id)) || { total:0, present:0 };
-        return { offeringId:o._id, course:o.courseId, term:o.termId, classGroup:o.classGroupId,
-            ...count, percentage:count.total ? Math.round(count.present / count.total * 100) : null };
-    }).sort((a,b) => (a.course?.code || '').localeCompare(b.course?.code || '') ||
-        (a.term?.name || '').localeCompare(b.term?.name || '') || String(a.offeringId).localeCompare(String(b.offeringId)));
-    ok(res,{ items });
-});
+exports.mySummary = wrap(async (req,res) => { ok(res,{items:await require('../services/studentPortalService').summaries(req)}); });
 exports.legacyList = wrap(async (req,res) => {
+    if(req.userRole==='student')await require('../services/studentPortalService').identity(req);
     const filter = req.userRole === 'teacher' ? { teacherId:req.teacherId } : req.userRole === 'student' ? { 'records.studentId': ownStudent(req) } : {};
     const docs = await Attendance.find(filter).sort({ date:-1 }).lean();
     const mapped = await LectureSession.find({ legacyAttendanceId: { $in:docs.map(d => d._id) } }).select('legacyAttendanceId');

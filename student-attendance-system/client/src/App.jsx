@@ -18,6 +18,7 @@ import { AcademicHome, OfferingDetail, SessionAttendance, LegacyAttendance } fro
 import TeacherProfile from './components/Profile/TeacherProfile';
 import EditProfile from './components/Profile/EditProfile';
 import StudentDashboard from './components/Student/StudentDashboard';
+import { MyCourses, MyCourse, MySession, MyAttendance, MyProfile } from './components/Student/StudentPortalPages';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import { useAuth } from './context/authContextState';
 
@@ -106,6 +107,9 @@ const App = () => {
                             </PrivateRoute>
                         } />
 
+                        <Route path="/my-attendance/history" element={<PrivateRoute roles={['student']}><MyAttendance /></PrivateRoute>} />
+                        <Route path="/my-profile" element={<PrivateRoute roles={['student']}><MyProfile /></PrivateRoute>} />
+
                         {/* Admin routes */}
                         <Route path="/admin" element={
                             <PrivateRoute roles={['admin']}>
@@ -113,9 +117,9 @@ const App = () => {
                             </PrivateRoute>
                         } />
 
-                        <Route path="/academic" element={<PrivateRoute><AcademicHome /></PrivateRoute>} />
-                        <Route path="/academic/offerings/:id" element={<PrivateRoute><OfferingDetail /></PrivateRoute>} />
-                        <Route path="/academic/sessions/:id" element={<PrivateRoute><SessionAttendance /></PrivateRoute>} />
+                        <Route path="/academic" element={<PrivateRoute>{role === 'student' ? <MyCourses /> : <AcademicHome />}</PrivateRoute>} />
+                        <Route path="/academic/offerings/:id" element={<PrivateRoute>{role === 'student' ? <MyCourse /> : <OfferingDetail />}</PrivateRoute>} />
+                        <Route path="/academic/sessions/:id" element={<PrivateRoute>{role === 'student' ? <MySession /> : <SessionAttendance />}</PrivateRoute>} />
                         <Route path="/legacy-attendance" element={<PrivateRoute><LegacyAttendance /></PrivateRoute>} />
                         {/* Root redirect */}
                         <Route path="/" element={<RootRedirect />} />

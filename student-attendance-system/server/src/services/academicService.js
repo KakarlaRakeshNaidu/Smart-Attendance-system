@@ -73,6 +73,7 @@ async function changeOffering(value, mutate) {
     fail(409, 'Offering changed concurrently. Refresh and retry.');
 }
 async function view(req, session) {
+    if (req.userRole === 'student') return require('./studentPortalService').sessionView(req,session);
     await canRead(req, session);
     const doc = await populated(CourseOffering.findById(session.offeringId));
     const teacher = await require('../models/Teacher').findById(session.teacherId).select('name email');

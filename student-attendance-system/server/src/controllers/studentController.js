@@ -349,18 +349,4 @@ exports.downloadStudentsCSV = async (req, res) => {
     }
 };
 // @desc    Get own student profile (student self-access)
-exports.getMyProfile = async (req, res) => {
-    try {
-        const studentId = req.account && req.account.studentProfileId;
-        if (!studentId) {
-            return res.status(404).json({ success: false, message: 'No student profile linked' });
-        }
-        const student = await Student.findById(studentId).select('-faceEmbedding');
-        if (!student) {
-            return res.status(404).json({ success: false, message: 'Student not found' });
-        }
-        return res.status(200).json({ success: true, student });
-    } catch (error) {
-        return respondError(res, error);
-    }
-};
+exports.getMyProfile = require('./studentPortalController').profile;
