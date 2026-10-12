@@ -1,10 +1,10 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/authContextState';
 import { Search, User, Menu } from 'lucide-react';
 
 const Navbar = ({ onMenuToggle }) => {
-    const { teacher, isAuthenticated } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const location = useLocation();
 
     if (!isAuthenticated || location.pathname === '/login' || location.pathname === '/register') {
@@ -40,8 +40,8 @@ const Navbar = ({ onMenuToggle }) => {
                         <User className="h-4 w-4" />
                     </div>
                     <div className="hidden sm:block">
-                        <p className="text-sm font-medium text-zinc-100">{teacher?.name || 'Teacher'}</p>
-                        <p className="text-xs text-zinc-400">{teacher?.subject || 'Faculty'}</p>
+                        <p className="text-sm font-medium text-zinc-100">{user?.name || 'User'}</p>
+                        <p className="text-xs text-zinc-400">{user?.subject || user?.role || 'User'}</p>
                     </div>
                 </div>
             </div>

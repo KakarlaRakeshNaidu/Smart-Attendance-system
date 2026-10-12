@@ -1,8 +1,13 @@
 const jwt = require('jsonwebtoken');
 
-const generateToken = (teacherId) => {
+/**
+ * Generate a signed JWT for an Account document.
+ * The token payload carries only { id: account._id }.
+ * Role and active status are always verified from the database on each request.
+ */
+const generateToken = (accountId) => {
     return jwt.sign(
-        { id: teacherId },
+        { id: accountId },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );

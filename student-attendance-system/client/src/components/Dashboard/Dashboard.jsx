@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/authContextState';
 import studentService from '../../services/studentService';
 import attendanceService from '../../services/attendanceService';
 import {
@@ -57,7 +57,7 @@ const Dashboard = () => {
             if (attendance.length > 0) {
                 records = attendance[0]?.records || [];
                 records.forEach(record => {
-                    if (record.status === 'present') presentCount++;
+                    if (record.status === 'present' || record.status === 'late') presentCount++;
                     else absentCount++;
                 });
             }
@@ -77,7 +77,7 @@ const Dashboard = () => {
                 .reverse()
                 .map((entry) => {
                     const entryRecords = entry.records || [];
-                    const present = entryRecords.filter((item) => item.status === 'present').length;
+                    const present = entryRecords.filter((item) => ['present', 'late'].includes(item.status)).length;
                     return {
                         day: new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short' }),
                         present,
@@ -229,7 +229,7 @@ const Dashboard = () => {
                                             <p className="text-sm text-zinc-500 truncate">ID: {record.studentRollNo}</p>
                                         </div>
                                     </div>
-                                    <span className={`flex-shrink-0 rounded-xl px-3 py-1 text-xs font-medium ${record.status === 'present' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                                    <span className={`flex-shrink-0 rounded-xl px-3 py-1 text-xs font-medium ${record.status === 'present' || record.status === 'late' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
                                         {record.status?.charAt(0).toUpperCase() + record.status?.slice(1)}
                                     </span>
                                 </div>
@@ -248,4 +248,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard;
+export default Dashboard;

@@ -79,4 +79,6 @@ coverage/
 *.local
 *.orig
 .cache/
+/graphify-out/cache/
+/graphify-out/20??-??-??/
 /IS.md

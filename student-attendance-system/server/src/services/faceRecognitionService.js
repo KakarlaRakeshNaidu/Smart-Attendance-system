@@ -1,113 +1,32 @@
 const axios = require('axios');
-
 const FACE_API_URL = process.env.FACE_API_URL || 'http://localhost:5001/api';
-
-const faceRecognitionService = {
-    /**
-     * Add a student with face embedding
-     * @param {string} studentId - Student ID
-     * @param {string} name - Student name
-     * @param {string} imageBase64 - Base64 encoded image
-     */
-    addStudent: async (studentId, name, imageBase64) => {
-        try {
-            const response = await axios.post(`${FACE_API_URL}/add-student`, {
-                studentId,
-                name,
-                image: imageBase64
-            });
-            return response.data;
-        } catch (error) {
-            if (error.response) {
-                return error.response.data;
-            }
-            throw error;
+const client = axios.create({ baseURL: FACE_API_URL, timeout: 75000 });
+async function post(endpoint, payload) {
+    try {
+        const { data } = await client.post(endpoint, payload);
+        if (!data || typeof data.success !== 'boolean') return { success: false, message: 'Face service returned an invalid response.', code: 'FACE_MODEL', httpStatus: 502 };
+        return data;
+    } catch (error) {
+        if (error.response) {
+            const status = error.response.status;
+            return { success: false,
+                message: error.response.data?.message || 'Face service request failed.',
+                code: error.response.data?.code || (status === 401 || status === 403 ? 'FACE_AUTH' : 'FACE_MODEL'),
+                httpStatus: status >= 500 || status === 401 || status === 403 ? 503 : 400 };
         }
-    },
-
-    /**
-     * Remove a student from face database
-     * @param {string} studentId - Student ID to remove
-     */
-    removeStudent: async (studentId) => {
-        try {
-            const response = await axios.post(`${FACE_API_URL}/remove-student`, {
-                studentId
-            });
-            return response.data;
-        } catch (error) {
-            if (error.response) {
-                return error.response.data;
-            }
-            throw error;
-        }
-    },
-
-    /**
-     * Recognize a single face
-     * @param {string} imageBase64 - Base64 encoded image
-     */
-    recognizeFace: async (imageBase64) => {
-        try {
-            const response = await axios.post(`${FACE_API_URL}/recognize`, {
-                image: imageBase64
-            });
-            return response.data;
-        } catch (error) {
-            if (error.response) {
-                return error.response.data;
-            }
-            throw error;
-        }
-    },
-
-    /**
-     * Recognize multiple faces (for classroom attendance)
-     * @param {string} imageBase64 - Base64 encoded image
-     */
-    recognizeMultipleFaces: async (imageBase64) => {
-        try {
-            const response = await axios.post(`${FACE_API_URL}/recognize-multiple`, {
-                image: imageBase64
-            });
-            return response.data;
-        } catch (error) {
-            if (error.response) {
-                return error.response.data;
-            }
-            throw error;
-        }
-    },
-
-    /**
-     * Get face embedding from image
-     * @param {string} imageBase64 - Base64 encoded image
-     */
-    getEmbedding: async (imageBase64) => {
-        try {
-            const response = await axios.post(`${FACE_API_URL}/get-embedding`, {
-                image: imageBase64
-            });
-            return response.data;
-        } catch (error) {
-            if (error.response) {
-                return error.response.data;
-            }
-            throw error;
-        }
-    },
-
-    /**
-     * Check if Face API is running
-     */
-    healthCheck: async () => {
-        try {
-            const response = await axios.get(`${FACE_API_URL}/health`, { timeout: 3000 });
-            return response.data;
-        } catch (error) {
-            return { success: false, message: 'Face Recognition API is not running' };
-        }
+        const timeout = error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT';
+        return { success: false, message: timeout ? 'Face service timed out. Please try again.' : 'Face service is unavailable. Manual attendance remains available.',
+            code: timeout ? 'FACE_TIMEOUT' : 'FACE_UNAVAILABLE', httpStatus: 503 };
+    }
+}
+module.exports = {
+    addStudent: (studentId, name, image) => post('/add-student', { studentId, name, image }),
+    removeStudent: studentId => post('/remove-student', { studentId }),
+    recognizeFace: image => post('/recognize', { image }),
+    recognizeMultipleFaces: image => post('/recognize-multiple', { image }),
+    getEmbedding: image => post('/get-embedding', { image }),
+    checkHealth: async () => {
+        try { const { data } = await client.get('/health', { timeout: 3000 }); return data; }
+        catch { return { success: false, message: 'Face service is unavailable. Manual attendance remains available.' }; }
     }
 };
-
-module.exports = faceRecognitionService;

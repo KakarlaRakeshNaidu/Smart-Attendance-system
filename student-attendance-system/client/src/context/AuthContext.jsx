@@ -1,106 +1,75 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 
-const AuthContext = createContext(null);
+import { AuthContext } from './authContextState';
+const validUser = user => user && ['student', 'teacher', 'admin'].includes(user.role);
 
 export const AuthProvider = ({ children }) => {
-    // Read teacher from localStorage synchronously — app renders instantly,
-    // background verify call updates/clears it if token is invalid.
-    const [teacher, setTeacher] = useState(() => {
-        try {
-            const stored = localStorage.getItem('teacher');
-            return stored ? JSON.parse(stored) : null;
-        } catch {
-            return null;
-        }
-    });
+    // Authenticate with the server before rendering protected content.
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const revision = useRef(0);
     const navigate = useNavigate();
 
+    const clearAuth = () => {
+        revision.current++;
+        authService.logout();
+        setUser(null);
+    };
+    const checkAuth = async () => {
+        const requestRevision = ++revision.current;
+        try {
+            const response = localStorage.getItem('token') ? await authService.getMe() : null;
+            if (requestRevision !== revision.current) return;
+            if (response?.success && validUser(response.user)) {
+                setUser(response.user);
+                localStorage.setItem('user', JSON.stringify(response.user));
+                localStorage.removeItem('teacher');
+            } else { clearAuth(); setLoading(false); }
+        } catch {
+            if (requestRevision === revision.current) { clearAuth(); setLoading(false); }
+        } finally {
+            if (requestRevision === revision.current) setLoading(false);
+        }
+    };
     useEffect(() => {
+        const expired = () => { clearAuth(); setLoading(false); navigate('/login', { replace: true }); };
+        window.addEventListener('auth:expired', expired);
         checkAuth();
+        return () => { revision.current++; window.removeEventListener('auth:expired', expired); };
     }, []);
 
-    const checkAuth = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (token) {
-                const response = await authService.getMe();
-                if (response.success) {
-                    setTeacher(response.teacher);
-                    localStorage.setItem('teacher', JSON.stringify(response.teacher));
-                } else {
-                    setTeacher(null);
-                    localStorage.removeItem('teacher');
-                }
-            } else {
-                setTeacher(null);
-            }
-        } catch (error) {
-            console.error('Auth check failed:', error);
-            localStorage.removeItem('token');
-            localStorage.removeItem('teacher');
-            setTeacher(null);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
     const login = async (email, password) => {
+        revision.current++;
         const response = await authService.login(email, password);
-        if (response.success) {
-            setTeacher(response.teacher);
-            navigate('/dashboard');
+        if (response.success && validUser(response.user)) {
+            setUser(response.user);
+            setLoading(false);
+            navigate({ teacher: '/dashboard', admin: '/admin', student: '/my-attendance' }[response.user.role], { replace: true });
         }
         return response;
     };
-
-    const register = async (userData) => {
-        const response = await authService.register(userData);
-        if (response.success) {
-            setTeacher(response.teacher);
-            navigate('/dashboard');
-        }
-        return response;
+    const logout = () => { clearAuth(); navigate('/login', { replace: true }); };
+    const updateUser = updatedUser => {
+        if (!validUser(updatedUser)) return;
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
     };
-
-    const logout = () => {
-        authService.logout();
-        setTeacher(null);
-        navigate('/login');
+    // Profile responses have a profile ID, not the Account ID or role.
+    const updateTeacher = profile => {
+        setUser(current => {
+            if (current?.role !== 'teacher') return current;
+            const updated = { ...current };
+            for (const field of ['name', 'email', 'subject', 'description', 'profilePhoto']) {
+                if (profile[field] !== undefined) updated[field] = profile[field];
+            }
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+        });
     };
-
-    const updateTeacher = (updatedTeacher) => {
-        setTeacher(updatedTeacher);
-        localStorage.setItem('teacher', JSON.stringify(updatedTeacher));
-    };
-
-    const value = {
-        teacher,
-        loading,
-        isAuthenticated: !!teacher,
-        login,
-        register,
-        logout,
-        updateTeacher,
-        checkAuth
-    };
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+    const value = { user, teacher: user?.role === 'teacher' ? user : null, loading, isAuthenticated: !!user,
+        role: user?.role || null, login, logout, updateUser, updateTeacher, checkAuth, clearAuth };
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-};
-
-export default AuthContext;
+export default AuthProvider;

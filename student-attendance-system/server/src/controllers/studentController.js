@@ -1,3 +1,4 @@
+const respondError = require('../utils/respondError');
 const Student = require('../models/Student');
 const { generateStudentListCSV } = require('../services/csvService');
 const faceRecognitionService = require('../services/faceRecognitionService');
@@ -9,7 +10,7 @@ const path = require('path');
 // @access  Private
 exports.getAllStudents = async (req, res) => {
     try {
-        const students = await Student.find().sort({ createdAt: -1 });
+        const students = await Student.find().select('-faceEmbedding').sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -17,11 +18,7 @@ exports.getAllStudents = async (req, res) => {
             students
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching students',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -44,11 +41,7 @@ exports.getStudent = async (req, res) => {
             student
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching student',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -58,6 +51,7 @@ exports.getStudent = async (req, res) => {
 exports.addStudent = async (req, res) => {
     try {
         const { studentId, name, email, class: studentClass, section, faceImage } = req.body;
+        if (typeof studentId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(studentId) || typeof name !== 'string' || !name.trim()) return res.status(400).json({ success: false, message: 'Student ID and name are required.' });
 
         // Check if student ID already exists
         const existingStudent = await Student.findOne({ studentId });
@@ -100,11 +94,11 @@ exports.addStudent = async (req, res) => {
         const student = await Student.create({
             studentId,
             name,
-            email,
+            email: email ? email.trim().toLowerCase() : undefined,
             class: studentClass || '',
             section: section || '',
             faceEmbedding: [],          // will be updated after face registration
-            registeredBy: req.teacherId,
+            registeredBy: req.userRole === 'teacher' ? req.teacherId : null,
             profilePhoto: profilePhotoPath
         });
 
@@ -136,11 +130,7 @@ exports.addStudent = async (req, res) => {
             faceWarning: faceWarning || null
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error adding student',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -149,9 +139,13 @@ exports.addStudent = async (req, res) => {
 // @access  Private
 exports.updateStudent = async (req, res) => {
     try {
+        const linked = await require('../models/Account').findOne({ studentProfileId: req.params.id });
+        if (linked && req.body.email !== undefined && req.body.email.trim().toLowerCase() !== linked.email) {
+            return res.status(409).json({ success: false, message: 'Email belongs to a linked login account and cannot be changed here.' });
+        }
         const student = await Student.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            Object.fromEntries(Object.entries(req.body).filter(([key]) => ['name', 'email', 'studentId', 'class', 'section'].includes(key))),
             { new: true, runValidators: true }
         );
 
@@ -168,11 +162,7 @@ exports.updateStudent = async (req, res) => {
             student
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error updating student',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -207,11 +197,7 @@ exports.deleteStudent = async (req, res) => {
             message: 'Student deleted successfully'
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error deleting student',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -246,8 +232,9 @@ exports.registerFace = async (req, res) => {
         );
 
         if (!faceResult.success) {
-            return res.status(400).json({
+            return res.status(faceResult.httpStatus || 400).json({
                 success: false,
+                code: faceResult.code,
                 message: faceResult.message || 'Failed to register face'
             });
         }
@@ -281,11 +268,7 @@ exports.registerFace = async (req, res) => {
             student
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error registering face',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -323,10 +306,7 @@ exports.updateProfilePhoto = async (req, res) => {
             fs.writeFileSync(filepath, buffer);
             student.profilePhoto = `/uploads/students/${student.studentId}/${filename}`;
         } catch (saveError) {
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to save profile photo'
-            });
+            return respondError(res, saveError);
         }
 
         await student.save();
@@ -337,11 +317,7 @@ exports.updateProfilePhoto = async (req, res) => {
             student
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error updating profile photo',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -350,17 +326,29 @@ exports.updateProfilePhoto = async (req, res) => {
 // @access  Private
 exports.downloadStudentsCSV = async (req, res) => {
     try {
-        const students = await Student.find().sort({ createdAt: -1 });
+        const students = await Student.find().select('-faceEmbedding').sort({ createdAt: -1 });
         const csvData = generateStudentListCSV(students);
 
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename=students_list.csv');
         res.status(200).send(csvData);
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error generating CSV',
-            error: error.message
-        });
+        return respondError(res, error);
+    }
+};
+// @desc    Get own student profile (student self-access)
+exports.getMyProfile = async (req, res) => {
+    try {
+        const studentId = req.account && req.account.studentProfileId;
+        if (!studentId) {
+            return res.status(404).json({ success: false, message: 'No student profile linked' });
+        }
+        const student = await Student.findById(studentId).select('-faceEmbedding');
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+        return res.status(200).json({ success: true, student });
+    } catch (error) {
+        return respondError(res, error);
     }
 };

@@ -6,8 +6,13 @@ import { UserPlus, Search, Download, Users, ChevronDown, ChevronUp, Trash2 } fro
 import { SkeletonTableRows } from '../common/Skeleton';
 import toast from 'react-hot-toast';
 import Card from '../common/Card';
+import CreateAccount from '../Admin/CreateAccount';
+import { useAuth } from '../../context/authContextState';
 
-const StudentList = ({ searchTerm }) => {
+const StudentList = () => {
+    const { role } = useAuth();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showOnboard, setShowOnboard] = React.useState(false);
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedClass, setSelectedClass] = useState('all');
@@ -62,8 +67,8 @@ const StudentList = ({ searchTerm }) => {
         const term = searchTerm.toLowerCase();
 
         return (
-            student.name.toLowerCase().includes(term) ||
-            student.studentId.toLowerCase().includes(term) ||
+            (student.name || '').toLowerCase().includes(term) ||
+            (student.studentId || '').toLowerCase().includes(term) ||
             (student.email || '').toLowerCase().includes(term)
         );
     });
@@ -76,6 +81,7 @@ const StudentList = ({ searchTerm }) => {
             : null;
 
     return (
+        <>
         <div className="space-y-6 page-enter">
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -88,6 +94,7 @@ const StudentList = ({ searchTerm }) => {
                         <Download className="h-4 w-4" />
                         <span className="hidden sm:inline">Export</span> CSV
                     </button>
+                    <button id="create-student-account-btn" onClick={() => setShowOnboard(true)} className="btn-secondary flex items-center gap-2 text-sm mr-2"><UserPlus className="h-4 w-4" /><span className="hidden sm:inline">Create</span> account</button>
                     <Link to="/students/add" className="btn-primary flex items-center gap-2 text-sm">
                         <UserPlus className="h-4 w-4" />
                         <span className="hidden sm:inline">Add</span> Student
@@ -105,6 +112,7 @@ const StudentList = ({ searchTerm }) => {
                             type="text"
                             placeholder="Search by name, email, or student ID..."
                             value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
                             className="input-field pl-10"
                         />
                     </div>
@@ -259,6 +267,14 @@ const StudentList = ({ searchTerm }) => {
                 )}
             </Card>
         </div>
+            {showOnboard && (
+                <CreateAccount
+                    initiatorRole={role}
+                    onClose={() => setShowOnboard(false)}
+                    onSuccess={() => fetchStudents()}
+                />
+            )}
+        </>
     );
 };
 

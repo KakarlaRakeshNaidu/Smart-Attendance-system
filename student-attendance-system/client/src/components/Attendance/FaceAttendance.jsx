@@ -7,6 +7,8 @@ const FaceAttendance = ({ onAttendanceMarked }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [stream, setStream] = useState(null);
+    const streamRef = useRef(null);
+    const mountedRef = useRef(false);
     const [isCameraOn, setIsCameraOn] = useState(false);
     const [loading, setLoading] = useState(false);
     const [faceApiStatus, setFaceApiStatus] = useState(null);
@@ -14,11 +16,11 @@ const FaceAttendance = ({ onAttendanceMarked }) => {
     const [lastResult, setLastResult] = useState(null);
 
     useEffect(() => {
+        mountedRef.current = true;
         checkFaceApiStatus();
         return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+            mountedRef.current = false;
+            streamRef.current?.getTracks().forEach(track => track.stop());
         };
     }, []);
 
@@ -41,6 +43,8 @@ const FaceAttendance = ({ onAttendanceMarked }) => {
                 }
             });
 
+            if (!mountedRef.current) { mediaStream.getTracks().forEach(track => track.stop()); return; }
+            streamRef.current = mediaStream;
             setStream(mediaStream);
             setIsCameraOn(true);
 
@@ -63,6 +67,7 @@ const FaceAttendance = ({ onAttendanceMarked }) => {
         if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
+        streamRef.current = null;
         setStream(null);
         setIsCameraOn(false);
     };
@@ -140,7 +145,7 @@ const FaceAttendance = ({ onAttendanceMarked }) => {
                 <div className="mx-auto max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-left">
                     <p className="mb-2 text-sm font-medium text-zinc-300">To start the Face API:</p>
                     <code className="block rounded-xl bg-zinc-900 px-2 py-1 text-xs text-zinc-200">
-                        cd student-attendance-system/server/python && python api_server.py
+                        npm run start:python
                     </code>
                 </div>
                 <button onClick={checkFaceApiStatus} className="btn-primary mt-4">

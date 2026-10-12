@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
-import teacherService from '../../services/teacherService';
+import { Link } from 'react-router-dom';
+import authService from '../../services/authService';
 import toast from 'react-hot-toast';
 
 const ChangePassword = () => {
@@ -40,7 +41,7 @@ const ChangePassword = () => {
         setLoading(true);
 
         try {
-            await teacherService.changePassword(
+            await authService.changePassword(
                 formData.currentPassword,
                 formData.newPassword
             );
@@ -59,6 +60,7 @@ const ChangePassword = () => {
 
     return (
         <div className="bg-card border border-gray-200 shadow-sm rounded-lg p-6 max-w-md mx-auto">
+            <Link to="/" className="inline-block mb-4 text-zinc-300">Back to dashboard</Link>
             <h2 className="text-section mb-6 flex items-center">
                 <Lock className="h-5 w-5 mr-2 text-primary" />
                 Change Password

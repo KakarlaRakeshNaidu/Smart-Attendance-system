@@ -28,7 +28,7 @@ Three services start automatically:
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| Node.js | ≥ 14.0.0 | For server and client |
+| Node.js | ≥ 18.0.0 | For server and client |
 | Python | ≥ 3.8 | For face recognition API |
 | MongoDB | Atlas or local | Connection string in `.env` |
 | HF Token | — | Required for HuggingFace Space API (set `HF_TOKEN` in `.env`) |
@@ -48,7 +48,7 @@ cd smart-attendance
 ```bash
 npm run setup
 ```
-This installs Node.js packages for root, server, and client, then runs `pip install` for Python.
+This installs Node.js packages for root, server, and client, then installs the existing Python requirements into `student-attendance-system/server/python/.venv`. Startup uses that environment automatically.
 
 ### 3. Configure environment variables
 
@@ -212,6 +212,14 @@ smart-attendance/
                 ├── helpers.js            ← Hash, token, file utils
                 └── validators.js         ← Input validation
 ```
+
+## Codebase Graph (Graphify)
+
+The generated knowledge graph in `graphify-out/` helps AI tools navigate the
+project without loading all source files. For codebase questions, query it with
+`graphify query "<question>"`; use `graphify path "<A>" "<B>"` or
+`graphify explain "<concept>"` to explore relationships. After changing code,
+refresh the graph with `graphify update .`. The AST cache is not tracked.
 
 ---
 
@@ -412,3 +420,7 @@ gunicorn       ← Production WSGI server
 ## License
 
 MIT License
+
+## Restoration verification
+
+The current Account-based RBAC implementation is preserved. See [VERIFICATION.md](VERIFICATION.md) for crash fixes, startup commands, tested flows and the remaining real-webcam verification.

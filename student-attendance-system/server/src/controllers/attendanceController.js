@@ -1,10 +1,33 @@
+const respondError = require('../utils/respondError');
 const Attendance = require('../models/Attendance');
 const Student = require('../models/Student');
 const { generateAttendanceCSV, generateFullAttendanceCSV } = require('../services/csvService');
 const faceRecognitionService = require('../services/faceRecognitionService');
 
+const attendanceScope = req => req.userRole === 'admin'
+    ? (req.query.teacherId ? { teacherId: req.query.teacherId } : {})
+    : { teacherId: req.teacherId };
+const generateAdminCSV = (documents, students) => {
+    const { createObjectCsvStringifier } = require('csv-writer');
+    const csv = createObjectCsvStringifier({ header: ['Date', 'Teacher ID', 'Subject', 'Class', 'Section', 'Student ID', 'Name', 'Status'].map(title => ({ id: title, title })) });
+    const rows = [];
+    for (const doc of documents) {
+        const group = students.filter(s => (!doc.class || s.class === doc.class) && (!doc.section || s.section === doc.section));
+        const included = new Set();
+        const add = (id, name, status) => rows.push({ Date: doc.date.toISOString().slice(0,10), 'Teacher ID': String(doc.teacherId), Subject: doc.subject, Class: doc.class, Section: doc.section, 'Student ID': id, Name: name, Status: status });
+        for (const student of group) {
+            const record = doc.records.find(r => String(r.studentId) === String(student._id));
+            add(student.studentId, student.name, record?.status || 'absent');
+            included.add(student.studentId);
+        }
+        for (const record of doc.records) if (!included.has(record.studentRollNo)) add(record.studentRollNo, record.studentName, record.status);
+    }
+    return csv.getHeaderString() + csv.stringifyRecords(rows);
+};
+
 // Helper to get start and end of day
 const getDateRange = (date) => {
+    if (isNaN(new Date(date).getTime())) throw { status: 400, publicMessage: 'Invalid date. Use YYYY-MM-DD.', code: 'INVALID_DATE' };
     const start = new Date(date);
     start.setHours(0, 0, 0, 0);
     const end = new Date(date);
@@ -18,6 +41,13 @@ const getDateRange = (date) => {
 exports.takeAttendance = async (req, res) => {
     try {
         const { records, subject, class: className, section } = req.body;
+        if (!Array.isArray(records) || !records.length || records.some(r => !r || !require('mongoose').isObjectIdOrHexString(r.studentId) || !['present', 'absent', 'late'].includes(r.status))) {
+            return res.status(400).json({ success: false, message: 'Provide student IDs and valid attendance statuses.' });
+        }
+        const ids = records.map(r => String(r.studentId));
+        if (new Set(ids).size !== ids.length || await Student.countDocuments({ _id: { $in: ids } }) !== ids.length) {
+            return res.status(400).json({ success: false, message: 'Records must contain distinct, existing students.' });
+        }
         const today = new Date();
         const { start, end } = getDateRange(today);
 
@@ -80,11 +110,7 @@ exports.takeAttendance = async (req, res) => {
             attendance
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error marking attendance', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -97,7 +123,7 @@ exports.getTodayAttendance = async (req, res) => {
         const { start, end } = getDateRange(today);
 
         const attendance = await Attendance.find({
-            teacherId: req.teacherId,
+            ...attendanceScope(req),
             date: { $gte: start, $lte: end }
         }).populate('records.studentId', 'name studentId email');
 
@@ -107,11 +133,7 @@ exports.getTodayAttendance = async (req, res) => {
             attendance
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error fetching attendance', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -124,7 +146,7 @@ exports.getAttendanceByDate = async (req, res) => {
         const { start, end } = getDateRange(date);
 
         const attendance = await Attendance.find({
-            teacherId: req.teacherId,
+            ...attendanceScope(req),
             date: { $gte: start, $lte: end }
         }).populate('records.studentId', 'name studentId email');
 
@@ -134,11 +156,7 @@ exports.getAttendanceByDate = async (req, res) => {
             attendance
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error fetching attendance', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -147,7 +165,7 @@ exports.getAttendanceByDate = async (req, res) => {
 // @access  Private
 exports.getAllAttendance = async (req, res) => {
     try {
-        const attendance = await Attendance.find({ teacherId: req.teacherId })
+        const attendance = await Attendance.find(attendanceScope(req))
             .sort({ date: -1 })
             .populate('records.studentId', 'name studentId email');
 
@@ -157,11 +175,7 @@ exports.getAllAttendance = async (req, res) => {
             attendance
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error fetching attendance', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -183,9 +197,15 @@ exports.downloadTodayAttendanceCSV = async (req, res) => {
             });
         }
 
+        if (req.userRole === 'admin') {
+            const documents = await Attendance.find({ ...attendanceScope(req), date: { $gte: start, $lte: end } });
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=attendance_today.csv');
+            return res.send(generateAdminCSV(documents, allStudents));
+        }
         // Get today's attendance
         const attendance = await Attendance.findOne({
-            teacherId: req.teacherId,
+            ...attendanceScope(req),
             date: { $gte: start, $lte: end }
         });
 
@@ -197,11 +217,7 @@ exports.downloadTodayAttendanceCSV = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=attendance_${dateStr}.csv`);
         res.status(200).send(csvData);
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error generating CSV', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -213,16 +229,7 @@ exports.downloadAttendanceCSV = async (req, res) => {
         const date = new Date(req.params.date);
         const { start, end } = getDateRange(date);
 
-        // Validate teacherId
-        if (!req.teacherId) {
-            console.error('Teacher ID not found in request');
-            return res.status(401).json({
-                success: false,
-                message: 'Teacher not authenticated'
-            });
-        }
 
-        console.log(`Fetching attendance for teacher ${req.teacherId} on ${date}`);
 
         // Get all students
         const allStudents = await Student.find().sort({ studentId: 1 });
@@ -231,9 +238,15 @@ exports.downloadAttendanceCSV = async (req, res) => {
             console.warn('No students found in system');
         }
 
+        if (req.userRole === 'admin') {
+            const documents = await Attendance.find({ ...attendanceScope(req), date: { $gte: start, $lte: end } });
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=attendance_date.csv');
+            return res.send(generateAdminCSV(documents, allStudents));
+        }
         // Get attendance for the date
         const attendance = await Attendance.findOne({
-            teacherId: req.teacherId,
+            ...attendanceScope(req),
             date: { $gte: start, $lte: end }
         });
 
@@ -243,7 +256,6 @@ exports.downloadAttendanceCSV = async (req, res) => {
             const csvData = generateFullAttendanceCSV(allStudents, attendanceRecords, date);
             const dateStr = date.toISOString().split('T')[0];
 
-            console.log(`Generated CSV for ${dateStr}`);
 
             res.setHeader('Content-Type', 'text/csv; charset=utf-8');
             res.setHeader('Content-Disposition', `attachment; filename="attendance_${dateStr}.csv"`);
@@ -254,12 +266,7 @@ exports.downloadAttendanceCSV = async (req, res) => {
         }
     } catch (error) {
         console.error('Error in downloadAttendanceCSV:', error.message);
-        console.error('Stack:', error.stack);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error generating CSV: ' + error.message,
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -277,14 +284,6 @@ exports.downloadAttendanceCSVRange = async (req, res) => {
             });
         }
 
-        // Validate teacherId
-        if (!req.teacherId) {
-            console.error('Teacher ID not found in request');
-            return res.status(401).json({
-                success: false,
-                message: 'Teacher not authenticated'
-            });
-        }
 
         // Safely parse dates
         const startDate = new Date(fromDate);
@@ -297,22 +296,27 @@ exports.downloadAttendanceCSVRange = async (req, res) => {
             });
         }
 
+        if (startDate > endDate) return res.status(400).json({ success: false, message: 'Start date must be before end date.' });
+        if ((endDate - startDate) / 86400000 > 366) return res.status(400).json({ success: false, message: 'Choose a range of at most 366 days.' });
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(23, 59, 59, 999);
 
-        console.log(`Fetching attendance for teacher ${req.teacherId} from ${startDate} to ${endDate}`);
 
         // Get all students
         const allStudents = await Student.find().sort({ studentId: 1 });
 
         // Get all attendance records for the date range
         const attendanceRecords = await Attendance.find({
-            teacherId: req.teacherId,
+            ...attendanceScope(req),
             date: { $gte: startDate, $lte: endDate }
         }).sort({ date: 1 });
 
-        console.log(`Found ${attendanceRecords.length} attendance records`);
 
+        if (req.userRole === 'admin') {
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=attendance_range.csv');
+            return res.send(generateAdminCSV(attendanceRecords, allStudents));
+        }
         // Generate all dates in range (DD-MM-YYYY format)
         const allDates = [];
         const currentDate = new Date(startDate);
@@ -363,7 +367,7 @@ exports.downloadAttendanceCSVRange = async (req, res) => {
             // Add P or A for each date
             for (const dateKey of allDates) {
                 const dateAttendance = attendanceByDate[dateKey];
-                if (dateAttendance && dateAttendance[student.studentId] === 'present') {
+                if (dateAttendance && ['present', 'late'].includes(dateAttendance[student.studentId])) {
                     row.push('P');
                 } else {
                     row.push('A');
@@ -380,12 +384,7 @@ exports.downloadAttendanceCSVRange = async (req, res) => {
         res.status(200).send(csvData);
     } catch (error) {
         console.error('Error in downloadAttendanceCSVRange:', error.message);
-        console.error('Stack:', error.stack);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error generating CSV: ' + error.message,
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -406,21 +405,23 @@ exports.takeFaceAttendance = async (req, res) => {
         // Recognize face using Python API
         const faceResult = await faceRecognitionService.recognizeFace(image);
         
-        console.log('Face recognition result:', JSON.stringify(faceResult, null, 2));
+
         
         if (!faceResult.success) {
-            return res.status(400).json({
+            return res.status(faceResult.httpStatus || 400).json({
                 success: false,
+                code: faceResult.code,
                 message: faceResult.message || 'Face not recognized'
             });
         }
 
+        if (!Array.isArray(faceResult.students) || !faceResult.students[0]?.studentId) {
+            return res.status(502).json({ success: false, message: 'Face service returned an invalid match.' });
+        }
         const recognizedStudent = faceResult.students[0];
-        console.log('Looking for studentId:', recognizedStudent.studentId);
         
         // Find student in MongoDB
         const student = await Student.findOne({ studentId: recognizedStudent.studentId });
-        console.log('Found student:', student ? student.name : 'NOT FOUND');
         
         if (!student) {
             return res.status(404).json({
@@ -454,6 +455,7 @@ exports.takeFaceAttendance = async (req, res) => {
                 r => r.studentRollNo === student.studentId
             );
             
+            if (existingRecord && existingRecord.status !== 'present') { existingRecord.status = 'present'; existingRecord.markedAt = new Date(); await attendance.save(); }
             if (existingRecord) {
                 return res.status(200).json({
                     success: true,
@@ -490,11 +492,7 @@ exports.takeFaceAttendance = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error marking face attendance', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -516,8 +514,9 @@ exports.takeMultipleFaceAttendance = async (req, res) => {
         const faceResult = await faceRecognitionService.recognizeMultipleFaces(image);
         
         if (!faceResult.success) {
-            return res.status(400).json({
+            return res.status(faceResult.httpStatus || 400).json({
                 success: false,
+                code: faceResult.code,
                 message: faceResult.message || 'No faces recognized'
             });
         }
@@ -562,6 +561,7 @@ exports.takeMultipleFaceAttendance = async (req, res) => {
                 );
                 
                 if (existingRecord) {
+                    if (existingRecord.status !== 'present') { existingRecord.status = 'present'; existingRecord.markedAt = new Date(); await attendance.save(); }
                     alreadyMarkedStudents.push({
                         name: student.name,
                         studentId: student.studentId
@@ -622,11 +622,7 @@ exports.takeMultipleFaceAttendance = async (req, res) => {
             unrecognizedCount: faceResult.unrecognizedCount
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error marking face attendance', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -638,10 +634,7 @@ exports.checkFaceApiStatus = async (req, res) => {
         const status = await faceRecognitionService.healthCheck();
         res.status(200).json(status);
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Face Recognition API is not available'
-        });
+        return respondError(res, error);
     }
 };
 
@@ -663,8 +656,9 @@ exports.bulkPhotoAttendance = async (req, res) => {
         const faceResult = await faceRecognitionService.recognizeMultipleFaces(image);
         
         if (!faceResult.success) {
-            return res.status(400).json({
+            return res.status(faceResult.httpStatus || 400).json({
                 success: false,
+                code: faceResult.code,
                 message: faceResult.message || 'No faces recognized',
                 totalFaces: faceResult.totalFaces || 0
             });
@@ -696,7 +690,7 @@ exports.bulkPhotoAttendance = async (req, res) => {
                 );
                 
                 if (existingRecord) {
-                    // Student already marked, skip
+                    if (existingRecord.status !== 'present') { existingRecord.status = 'present'; existingRecord.markedAt = new Date(); await attendance.save(); }
                     continue;
                 }
             }
@@ -753,11 +747,7 @@ exports.bulkPhotoAttendance = async (req, res) => {
             }))
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error processing photo', 
-            error: error.message 
-        });
+        return respondError(res, error);
     }
 };
 
@@ -781,10 +771,39 @@ exports.resetTodayAttendance = async (req, res) => {
             deletedCount: result.deletedCount
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error resetting attendance', 
-            error: error.message 
-        });
+        return respondError(res, error);
+    }
+};
+// @desc    Get own attendance (student self-access)
+// Returns only records where studentId matches the student's own profile
+exports.getMyAttendance = async (req, res) => {
+    try {
+        const studentProfileId = req.account && req.account.studentProfileId;
+        if (!studentProfileId) {
+            return res.status(404).json({ success: false, message: 'No student profile linked' });
+        }
+        // Find all attendance documents that contain a record for this student
+        const attendanceDocs = await Attendance.find({
+            'records.studentId': studentProfileId
+        }).select('date subject class section records').sort({ date: -1 });
+
+        // Filter records to only include this student's own record
+        const myRecords = attendanceDocs.map(doc => {
+            const myRecord = doc.records.find(
+                r => String(r.studentId) === String(studentProfileId)
+            );
+            return {
+                date: doc.date,
+                subject: doc.subject,
+                class: doc.class,
+                section: doc.section,
+                status: myRecord ? myRecord.status : 'absent',
+                markedAt: myRecord ? myRecord.markedAt : null
+            };
+        }).filter(Boolean);
+
+        return res.status(200).json({ success: true, count: myRecords.length, attendance: myRecords });
+    } catch (error) {
+        return respondError(res, error);
     }
 };

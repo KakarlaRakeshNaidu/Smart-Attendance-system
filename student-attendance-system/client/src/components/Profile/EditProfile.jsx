@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/authContextState';
 import { useNavigate } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import { User, BookOpen, FileText, Camera, Save, ArrowLeft, Upload } from 'lucide-react';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import studentService from '../../services/studentService';
 import { User, Mail, Hash, BookOpen, Users, ArrowLeft, Upload, Camera, X, Check, ImagePlus, FlipHorizontal } from 'lucide-react';
@@ -21,6 +21,10 @@ const AddStudent = () => {
     const [cameraStream, setCameraStream] = useState(null);
     const [facingMode, setFacingMode] = useState('user');
 
+    const streamRef = useRef(null);
+    const mountedRef = useRef(false);
+    useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; streamRef.current?.getTracks().forEach(track => track.stop()); }; }, []);
+    useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const navigate = useNavigate();
@@ -47,6 +51,8 @@ const AddStudent = () => {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 } }
             });
+            if (!mountedRef.current) { stream.getTracks().forEach(track => track.stop()); return; }
+            streamRef.current = stream;
             setCameraStream(stream);
             setShowCamera(true);
 
@@ -67,6 +73,7 @@ const AddStudent = () => {
             cameraStream.getTracks().forEach(track => track.stop());
             setCameraStream(null);
         }
+        streamRef.current = null;
         setShowCamera(false);
     }, [cameraStream]);
 

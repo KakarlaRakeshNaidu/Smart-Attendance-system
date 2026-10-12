@@ -106,11 +106,11 @@ const PhotoUpload = ({ onAttendanceMarked }) => {
                     toast.success(`Photo ${i + 1}/${selectedFiles.length}: Processed`);
                 } else {
                     totalPhotosProcessed++;
-                    toast.info(`Photo ${i + 1}/${selectedFiles.length}: No new students found`);
+                    toast(`Photo ${i + 1}/${selectedFiles.length}: No new students found`);
                 }
             } catch (error) {
                 totalPhotosProcessed++;
-                toast.error(`Photo ${i + 1}: Error processing`);
+                toast.error(error.response?.data?.message || `Photo ${i + 1}: Error processing`);
             }
         }
 

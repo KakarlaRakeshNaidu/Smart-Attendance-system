@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/authContextState';
 import { User, Mail, BookOpen, FileText, Edit3, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Loader from '../common/Loader';

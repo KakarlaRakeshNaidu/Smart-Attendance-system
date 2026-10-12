@@ -18,7 +18,7 @@ try:
 except ImportError:
     pass  # python-dotenv not installed, rely on shell environment
 
-from models.hf_model import HFSpaceModel
+from models.hf_model import HFSpaceModel, FaceServiceError
 
 app = Flask(__name__)
 CORS(app)
@@ -29,16 +29,32 @@ MONGO_URI = (
     os.environ.get('MONGO_URI') or
     'mongodb://localhost:27017/attendance_system'
 )
-client = MongoClient(MONGO_URI)
-db = client.get_default_database() if 'attendance_system' in MONGO_URI else client['attendance_system']
+client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=10000, connectTimeoutMS=10000)
+db = client.get_default_database('attendance_system')
 students_collection = db['students']
 
 # Initialize HuggingFace Space model client once at startup
-print("Connecting to HuggingFace Space model...")
+print("Initializing face service...")
 model = HFSpaceModel()
-print("HuggingFace Space model ready!")
+print("Face service ready. The remote model connects when needed.")
 
 THRESHOLD = 0.5
+
+def face_error(error):
+    if isinstance(error, FaceServiceError):
+        return {"message": str(error), "code": error.code}
+    return {"message": "Face service request failed. Check the service configuration.", "code": "FACE_SERVICE"}
+
+@app.before_request
+def validate_body():
+    if request.method == 'POST':
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify(success=False, message="Provide a JSON object."), 400
+        for key in ['studentId', 'name', 'image']:
+            if key in data and not isinstance(data[key], str):
+                return jsonify(success=False, message=f"{key} must be text."), 400
+
 
 def cosine_similarity(a, b):
     """Calculate cosine similarity between two vectors"""
@@ -84,7 +100,7 @@ def get_all_students_with_embeddings():
     result = {}
     for student in students:
         embedding = student.get('faceEmbedding')
-        if embedding and isinstance(embedding, list) and len(embedding) > 0:
+        if isinstance(embedding, list) and len(embedding) == 512 and np.isfinite(embedding).all() and np.linalg.norm(embedding) > 0:
             result[student['studentId']] = {
                 "name": student['name'],
                 "embedding": np.array(embedding)
@@ -98,7 +114,8 @@ def health_check():
     return jsonify({
         "success": True,
         "message": "Face recognition API is running",
-        "model": "HuggingFace Space (nitishsaini44/baffaloL_model)"
+        "model": "HuggingFace Space (nitishsaini44/baffaloL_model)",
+        "modelConnected": model.client is not None
     })
 
 @app.route('/api/health/full', methods=['GET'])
@@ -117,8 +134,8 @@ def health_check_full():
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": f"API running but database error: {str(e)}"
-        }), 500
+            "message": "API running but database unavailable"
+        }), 503 if isinstance(e, FaceServiceError) else 500
 
 @app.route('/api/add-student', methods=['POST'])
 def add_student():
@@ -180,11 +197,11 @@ def add_student():
         })
 
     except Exception as e:
-        print(f"Error adding student: {str(e)}")
+        print("Face registration request failed.")
         return jsonify({
             "success": False,
-            "message": str(e)
-        }), 500
+            **face_error(e)
+        }), 503 if isinstance(e, FaceServiceError) else 500
 
 @app.route('/api/remove-student', methods=['POST'])
 def remove_student():
@@ -219,8 +236,8 @@ def remove_student():
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": str(e)
-        }), 500
+            **face_error(e)
+        }), 503 if isinstance(e, FaceServiceError) else 500
 
 @app.route('/api/recognize', methods=['POST'])
 def recognize_face():
@@ -312,8 +329,8 @@ def recognize_face():
         print(f"Error in recognize: {str(e)}")
         return jsonify({
             "success": False,
-            "message": str(e)
-        }), 500
+            **face_error(e)
+        }), 503 if isinstance(e, FaceServiceError) else 500
 
 @app.route('/api/recognize-multiple', methods=['POST'])
 def recognize_multiple_faces():
@@ -412,8 +429,8 @@ def recognize_multiple_faces():
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": str(e)
-        }), 500
+            **face_error(e)
+        }), 503 if isinstance(e, FaceServiceError) else 500
 
 @app.route('/api/get-embedding', methods=['POST'])
 def get_embedding():
@@ -462,8 +479,8 @@ def get_embedding():
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": str(e)
-        }), 500
+            **face_error(e)
+        }), 503 if isinstance(e, FaceServiceError) else 500
 
 @app.route('/api/registered-count', methods=['GET'])
 def get_registered_count():
@@ -477,10 +494,10 @@ def get_registered_count():
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": str(e)
-        }), 500
+            **face_error(e)
+        }), 503 if isinstance(e, FaceServiceError) else 500
 
 if __name__ == '__main__':
-    print(f"Connecting to MongoDB: {MONGO_URI}")
+    print("MongoDB configuration loaded.")
     print("Starting Face Recognition API on port 5001...")
     app.run(host='0.0.0.0', port=5001, debug=False)

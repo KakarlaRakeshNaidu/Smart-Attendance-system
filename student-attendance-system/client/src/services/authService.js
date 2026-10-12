@@ -1,42 +1,49 @@
 import api from './api';
 
 const authService = {
-    register: async (userData) => {
-        const response = await api.post('/auth/register', userData);
-        if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('teacher', JSON.stringify(response.data.teacher));
-        }
-        return response.data;
-    },
-
     login: async (email, password) => {
         const response = await api.post('/auth/login', { email, password });
         if (response.data.token) {
             localStorage.setItem('token', response.data.token);
-            localStorage.setItem('teacher', JSON.stringify(response.data.teacher));
+            localStorage.setItem('user', JSON.stringify(response.data.user));
         }
         return response.data;
     },
 
     logout: () => {
         localStorage.removeItem('token');
-        localStorage.removeItem('teacher');
+        localStorage.removeItem('user');
+        localStorage.removeItem('teacher'); // legacy cleanup
     },
 
     getMe: async () => {
-        const response = await api.get('/auth/me');
+        const response = await api.get('/auth/me', { timeout: 15000 });
+        return response.data;
+    },
+
+    changePassword: async (currentPassword, newPassword) => {
+        const response = await api.put('/auth/change-password', { currentPassword, newPassword });
+        return response.data;
+    },
+
+    activate: async (token, password) => {
+        const response = await api.post('/auth/activate', { token, password });
         return response.data;
     },
 
     getCurrentUser: () => {
-        const teacher = localStorage.getItem('teacher');
-        return teacher ? JSON.parse(teacher) : null;
+        try {
+            const u = localStorage.getItem('user');
+            return u ? JSON.parse(u) : null;
+        } catch { return null; }
     },
 
-    isAuthenticated: () => {
-        return !!localStorage.getItem('token');
-    }
+    isAuthenticated: () => !!localStorage.getItem('token'),
+    getActivationContext: async (token) => {
+        const response = await api.get(`/auth/activation-context?token=${encodeURIComponent(token)}`);
+        return response.data;
+    },
+
 };
 
 export default authService;

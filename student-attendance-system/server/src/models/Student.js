@@ -54,4 +54,5 @@ studentSchema.pre('save', function(next) {
     next();
 });
 
+studentSchema.set('toJSON', { transform: (doc, data) => { delete data.faceEmbedding; return data; } });
 module.exports = mongoose.model('Student', studentSchema);

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import teacherService from '../../services/teacherService';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/authContextState';
 import { Camera, Upload, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 

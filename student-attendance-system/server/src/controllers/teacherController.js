@@ -1,3 +1,5 @@
+const respondError = require('../utils/respondError');
+const Account = require('../models/Account');
 const Teacher = require('../models/Teacher');
 const path = require('path');
 const fs = require('fs');
@@ -29,11 +31,7 @@ exports.getProfile = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching profile',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -62,6 +60,7 @@ exports.updateProfile = async (req, res) => {
             });
         }
 
+        await Account.findByIdAndUpdate(req.accountId, { name: teacher.name });
         res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
@@ -75,11 +74,7 @@ exports.updateProfile = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error updating profile',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -120,11 +115,7 @@ exports.uploadProfilePhoto = async (req, res) => {
             profilePhoto: photoPath
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error uploading photo',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };
 
@@ -167,10 +158,6 @@ exports.changePassword = async (req, res) => {
             message: 'Password changed successfully'
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error changing password',
-            error: error.message
-        });
+        return respondError(res, error);
     }
 };

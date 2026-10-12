@@ -48,7 +48,7 @@ const generateFullAttendanceCSV = (allStudents, attendanceRecords, date) => {
     // Generate records for ALL students
     const records = allStudents.map((student, index) => {
         const attendanceRecord = attendanceMap[student.studentId];
-        const isPresent = attendanceRecord && attendanceRecord.status === 'present';
+        const isPresent = attendanceRecord && ['present', 'late'].includes(attendanceRecord.status);
         
         return {
             sno: index + 1,
