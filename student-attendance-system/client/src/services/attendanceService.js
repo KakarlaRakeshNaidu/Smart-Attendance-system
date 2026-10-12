@@ -3,7 +3,7 @@ import api from './api';
 async function sessionRecognition(sessionId, image, mode, method) {
     const { data } = await api.post('/academic/sessions/' + sessionId + '/recognise', { image, mode, method });
     const recognized = data.recognized || [];
-    return { ...data, student:recognized[0], markedStudents:recognized, recognized, alreadyMarked:false };
+    return { ...data, student:recognized[0], markedStudents:recognized.filter(s=>!(data.alreadyMarkedStudents || []).some(a=>a.studentId===s.studentId)), recognized, alreadyMarked:!!data.alreadyMarked };
 }
 const attendanceService = {
     takeAttendance: async (attendanceData) => {
@@ -33,9 +33,9 @@ const attendanceService = {
         return response.data;
     },
 
-    downloadAttendanceCSV: async (date) => {
+    downloadAttendanceCSV: async (date, source = "all") => {
         try {
-            const response = await api.get(`/attendance/download/${date}`, {
+            const response = await api.get(`/attendance/download/${date}?source=${encodeURIComponent(source)}`, {
                 responseType: 'blob'
             });
             return response.data;
@@ -57,9 +57,9 @@ const attendanceService = {
         }
     },
 
-    downloadAttendanceCSVRange: async (fromDate, toDate) => {
+    downloadAttendanceCSVRange: async (fromDate, toDate, source = "all") => {
         try {
-            const response = await api.get(`/attendance/download/range?fromDate=${fromDate}&toDate=${toDate}`, {
+            const response = await api.get(`/attendance/download/range?fromDate=${fromDate}&toDate=${toDate}&source=${encodeURIComponent(source)}`, {
                 responseType: 'blob'
             });
             return response.data;

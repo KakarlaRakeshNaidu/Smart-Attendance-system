@@ -3,15 +3,22 @@ import attendanceService from '../../services/attendanceService';
 import { Camera, CameraOff, Users, User, CheckCircle, AlertCircle, Scan } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
+const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChange }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [stream, setStream] = useState(null);
     const streamRef = useRef(null);
     const mountedRef = useRef(false);
+    const requestRef = useRef(false);
     const [isCameraOn, setIsCameraOn] = useState(false);
     const [loading, setLoading] = useState(false);
     const [faceApiStatus, setFaceApiStatus] = useState(null);
+    const [faceError,setFaceError] = useState('');
+    const [cameraError,setCameraError] = useState('');
+    const [cameraStarting,setCameraStarting] = useState(false);
+    const startingRef = useRef(false);
+    const cameraAttempt = useRef(0);
+    useEffect(() => {onBusyChange?.(loading);return () => onBusyChange?.(false);},[loading,onBusyChange]);
     const [mode, setMode] = useState('single'); // 'single' or 'multiple'
     const [lastResult, setLastResult] = useState(null);
 
@@ -27,13 +34,15 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
     const checkFaceApiStatus = async () => {
         try {
             const status = await attendanceService.checkFaceApiStatus();
-            setFaceApiStatus(status.success);
+            if (mountedRef.current) {setFaceApiStatus(status.success);setFaceError(status.success ? '' : status.message || 'Face service is unavailable.');}
         } catch (error) {
-            setFaceApiStatus(false);
+            if (mountedRef.current) {setFaceApiStatus(false);setFaceError(error.response?.data?.message || 'Cannot connect to the face service.');}
         }
     };
 
     const startCamera = async () => {
+        if (startingRef.current) return;
+        startingRef.current = true;const attempt = ++cameraAttempt.current;setCameraStarting(true);setCameraError('');
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -43,24 +52,25 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
                 }
             });
 
-            if (!mountedRef.current) { mediaStream.getTracks().forEach(track => track.stop()); return; }
+            if (!mountedRef.current || attempt !== cameraAttempt.current) { mediaStream.getTracks().forEach(track => track.stop()); return; }
             streamRef.current = mediaStream;
             setStream(mediaStream);
             setIsCameraOn(true);
 
-            // Wait for next tick to ensure video element is rendered
-            setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.srcObject = mediaStream;
-                    videoRef.current.play().catch(console.error);
-                }
-            }, 100);
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+                await videoRef.current.play();
+            }
         } catch (error) {
-            toast.error('Failed to access camera. Please allow camera permissions.');
-        }
+            if (attempt !== cameraAttempt.current) return;
+            const message = error.name === 'NotFoundError' ? 'No camera device was found.' : error.name === 'NotAllowedError' ? 'Camera access was denied. Please allow camera permissions.' : 'Failed to access camera: ' + (error.message || error.name);
+            if (mountedRef.current) {setCameraError(message);toast.error(message);}
+            streamRef.current?.getTracks().forEach(track => track.stop());streamRef.current = null;
+            if (mountedRef.current) {setStream(null);setIsCameraOn(false);}
+        } finally {if (attempt === cameraAttempt.current) {startingRef.current = false;if (mountedRef.current) setCameraStarting(false);}}
     };
-
     const stopCamera = () => {
+        cameraAttempt.current++;startingRef.current = false;setCameraStarting(false);
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }
@@ -73,6 +83,8 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
     };
 
     const captureAndRecognize = async () => {
+        if (requestRef.current) return;
+        if (!sessionId || disabledReason) {toast.error(disabledReason || 'Select a lecture session before marking attendance.');return;}
         if (!videoRef.current || !canvasRef.current) return;
 
         const video = videoRef.current;
@@ -83,7 +95,7 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
             return;
         }
 
-        setLoading(true);
+        requestRef.current = true;setLoading(true);
         setLastResult(null);
 
         try {
@@ -128,41 +140,21 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
             toast.error(error.response?.data?.message || 'Failed to recognize face');
             setLastResult({ success: false, message: error.response?.data?.message || 'Error' });
         } finally {
-            setLoading(false);
+            requestRef.current = false;setLoading(false);
         }
     };
 
-    if (faceApiStatus === false) {
-        return (
-            <div className="py-12 text-center">
-                <AlertCircle className="mx-auto mb-4 h-16 w-16 text-amber-300" />
-                <h3 className="mb-2 text-lg font-semibold text-zinc-100">
-                    Face Recognition API Not Available
-                </h3>
-                <p className="mb-4 text-zinc-400">
-                    The Python Face Recognition server is not running.
-                </p>
-                <div className="mx-auto max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-left">
-                    <p className="mb-2 text-sm font-medium text-zinc-300">To start the Face API:</p>
-                    <code className="block rounded-xl bg-zinc-900 px-2 py-1 text-xs text-zinc-200">
-                        npm run start:python
-                    </code>
-                </div>
-                <button onClick={checkFaceApiStatus} className="btn-primary mt-4">
-                    Retry Connection
-                </button>
-            </div>
-        );
-    }
-
     return (
         <div>
+            {faceApiStatus === false && <div role="alert" className="mb-4 rounded-2xl border border-amber-900 bg-amber-500/10 p-4 text-amber-300"><p className="font-semibold">Face Recognition API Not Available</p><p>{faceError}</p><p className="text-sm mt-1">Camera preview is still available. Recognition needs the face service; Manual attendance remains usable.</p><button onClick={checkFaceApiStatus} className="btn-secondary mt-3">Retry Connection</button></div>}
+            {cameraError && <p role="alert" className="mb-3 text-red-300">{cameraError}</p>}
+            {(!sessionId || disabledReason) && <p className="mb-3 text-amber-300">{disabledReason || 'Select a lecture session before marking attendance.'}</p>}
             <div className="mb-4 flex gap-2">
-                <button onClick={() => setMode('single')} className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${mode === 'single' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}>
+                <button disabled={loading} onClick={() => setMode('single')} className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${mode === 'single' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}>
                     <User className="h-5 w-5" />
                     Single Face
                 </button>
-                <button onClick={() => setMode('multiple')} className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${mode === 'multiple' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}>
+                <button disabled={loading} onClick={() => setMode('multiple')} className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${mode === 'multiple' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}>
                     <Users className="h-5 w-5" />
                     Multiple Faces
                 </button>
@@ -191,9 +183,10 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
             {/* Hidden canvas for capture */}
             <canvas ref={canvasRef} className="hidden" />
 
+            {cameraStarting && <p className="text-amber-300 mb-3">Waiting for camera access. Check your browser permission prompt. <button className="underline" onClick={stopCamera}>Stop</button></p>}
             <div className="flex gap-3">
                 {!isCameraOn ? (
-                    <button onClick={startCamera} className="flex-1 btn-primary flex items-center justify-center gap-2">
+                    <button onClick={startCamera} disabled={cameraStarting} className="flex-1 btn-primary flex items-center justify-center gap-2">
                         <Camera className="h-5 w-5" />
                         Start Camera
                     </button>
@@ -203,7 +196,7 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId }) => {
                             <CameraOff className="h-5 w-5" />
                             Stop
                         </button>
-                        <button onClick={captureAndRecognize} disabled={loading} className="flex-1 btn-success flex items-center justify-center gap-2">
+                        <button onClick={captureAndRecognize} disabled={loading || !sessionId || !!disabledReason} className="flex-1 btn-success flex items-center justify-center gap-2">
                             {loading ? (
                                 <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (

@@ -21,9 +21,12 @@ const devModeActive = () => process.env.ENABLE_DEV_ACTIVATION === 'true';
 // ─────────────────────────────────────────────────────────────────────────────
 exports.listAccounts = async (req, res) => {
     try {
-        const accounts = await Account.find().select('+activationTokenHash').sort({ createdAt: -1 });
+        const [accounts, studentCount] = await Promise.all([
+            Account.find().select('+activationTokenHash').sort({ createdAt: -1 }),
+            Student.countDocuments({})
+        ]);
         const safe = accounts.map(a => a.toPublicJSON());
-        return res.status(200).json({ success: true, accounts: safe, count: safe.length });
+        return res.status(200).json({ success: true, accounts: safe, count: safe.length, studentCount });
     } catch (error) {
         return respondError(res, error);
     }

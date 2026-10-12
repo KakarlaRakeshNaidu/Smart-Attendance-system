@@ -16,6 +16,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     const teacherLinks = [
         { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
         { to: '/students',   label: 'Students',   icon: Users },
+        { to: '/attendance', label: 'Attendance', icon: ClipboardCheck },
         { to: '/academic', label: 'My courses/classes', icon: ClipboardCheck },
         { to: '/legacy-attendance', label: 'Legacy attendance', icon: ClipboardCheck },
         { to: '/profile',    label: 'Profile',    icon: User }

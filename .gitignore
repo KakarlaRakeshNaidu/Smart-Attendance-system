@@ -87,10 +87,7 @@ coverage/
 /.graphify/
 /.github/copilot-instructions.md
 
-# Tests and isolated fixture servers (kept locally)
-tests/
-test/
-__tests__/
+# Disposable test outputs; meaningful source tests remain trackable
 /student-attendance-system/server/scripts/serve-fixtures.js
 /test-results/
 /playwright-report/

@@ -10,6 +10,7 @@ import Loader from './components/common/Loader';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Activate from './components/Auth/Activate';
 import ChangePassword from './components/Auth/ChangePassword';
+import Attendance from './pages/Attendance';
 import Dashboard from './components/Dashboard/Dashboard';
 import StudentList from './components/Students/StudentList';
 import AddStudent from './components/Students/AddStudent';
@@ -79,7 +80,7 @@ const App = () => {
                         } />
                         <Route path="/attendance" element={
                             <PrivateRoute roles={['teacher']}>
-                                <Navigate to="/academic" replace />
+                                <Attendance />
                             </PrivateRoute>
                         } />
                         <Route path="/profile" element={

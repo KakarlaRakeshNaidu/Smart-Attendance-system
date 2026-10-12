@@ -4,10 +4,12 @@ import { Download, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DownloadAttendance = () => {
+    const [source,setSource] = useState('all');
+    const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const [activeTab, setActiveTab] = useState('single');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);
-    const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(today);
+    const [fromDate, setFromDate] = useState(today);
+    const [toDate, setToDate] = useState(today);
     const [loading, setLoading] = useState(false);
 
     const handleDownload = async () => {
@@ -17,10 +19,10 @@ const DownloadAttendance = () => {
             let filename;
 
             if (activeTab === 'single') {
-                responseData = await attendanceService.downloadAttendanceCSV(date);
+                responseData = await attendanceService.downloadAttendanceCSV(date, source);
                 filename = `attendance_${date}.csv`;
             } else {
-                responseData = await attendanceService.downloadAttendanceCSVRange(fromDate, toDate);
+                responseData = await attendanceService.downloadAttendanceCSVRange(fromDate, toDate, source);
                 filename = `attendance_${fromDate}_to_${toDate}.csv`;
             }
 
@@ -86,6 +88,12 @@ const DownloadAttendance = () => {
                 Download Attendance
             </h2>
 
+            <label className="block text-sm text-zinc-400 mb-4">Records
+                <select aria-label="Download records" className="input-field mt-1" value={source} onChange={e=>setSource(e.target.value)}>
+                    <option value="all">All attendance</option><option value="sessions">Course/session attendance</option><option value="legacy">Legacy attendance</option>
+                </select>
+            </label>
+            <p className="text-sm text-zinc-400 mb-4">Dates use Asia/Kolkata. CSVs include course, term, class, session identity and finalisation state; multiple lectures are not combined.</p>
             {/* Tabs */}
             <div className="flex border-b border-gray-200 mb-6">
                 <button

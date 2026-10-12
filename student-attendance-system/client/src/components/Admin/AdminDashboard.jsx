@@ -10,6 +10,7 @@ import CreateAccount from "./CreateAccount";
 const AdminDashboard = () => {
     const { user, logout } = useAuth();
     const [accounts, setAccounts]       = useState([]);
+    const [studentCount, setStudentCount] = useState(null);
     const [loading, setLoading]         = useState(true);
     const [actionId, setActionId]       = useState(null);
     const [showCreate, setShowCreate]   = useState(false);
@@ -17,7 +18,10 @@ const AdminDashboard = () => {
     const fetchAccounts = async () => {
         try {
             const res = await api.get("/admin/accounts");
-            if (res.data.success) setAccounts(res.data.accounts || []);
+            if (res.data.success) {
+                setAccounts(res.data.accounts || []);
+                setStudentCount(Number.isInteger(res.data.studentCount) ? res.data.studentCount : null);
+            }
         } catch (e) {
             toast.error("Failed to load accounts");
         } finally {
@@ -53,7 +57,7 @@ const AdminDashboard = () => {
     if (loading) return <Loader />;
 
     const teachers = accounts.filter(a => a.role === "teacher");
-    const students = accounts.filter(a => a.role === "student");
+
     const admins   = accounts.filter(a => a.role === "admin");
 
     const roleBadge = (role) => {
@@ -111,7 +115,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="card p-5">
                     <p className="text-zinc-400 text-sm mb-1">Students</p>
-                    <p className="text-3xl font-bold text-emerald-400">{students.length}</p>
+                    <p className="text-3xl font-bold text-emerald-400">{studentCount ?? '—'}</p>
                 </div>
                 <div className="card p-5">
                     <p className="text-zinc-400 text-sm mb-1">Administrators</p>

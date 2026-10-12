@@ -193,7 +193,9 @@ exports.recognise = wrap(async (req,res) => {
     if (!ids.length) return ok(res,{ message: 'No eligible matches; nothing marked.', unrecognizedCount: result.unrecognizedCount || 0 });
     const records = ids.map(id => ({ studentId: roster.find(s => s.rollNo === id).studentId, status: 'present' }));
     const changed = await markSession(req,records,req.body.method === 'photo' ? 'photo' : 'face');
-    ok(res,{ item: await A.view(req,changed), message: ids.length + ' eligible student(s) marked present.', totalFaces:result.totalFaces, recognized:matches.map(m=>({studentId:m.studentId,name:roster.find(s=>s.rollNo===m.studentId).name,confidence:m.confidence})), unrecognizedCount: result.unrecognizedCount || 0 });
+    ok(res,{ item: await A.view(req,changed), message: ids.length + ' eligible student(s) marked present.', totalFaces:result.totalFaces, recognized:matches.map(m=>({studentId:m.studentId,name:roster.find(s=>s.rollNo===m.studentId).name,confidence:m.confidence})),
+        alreadyMarked:single && session.records.some(r=>String(r.studentId)===String(records[0].studentId)&&r.status==='present'),
+        alreadyMarkedStudents:matches.filter(m=>session.records.some(r=>String(r.studentId)===String(roster.find(s=>s.rollNo===m.studentId).studentId)&&r.status==='present')).map(m=>({studentId:m.studentId,name:roster.find(s=>s.rollNo===m.studentId).name,confidence:m.confidence})), unrecognizedCount: result.unrecognizedCount || 0 });
 });
 exports.exportSession = wrap(async (req,res) => {
     if (!isStaff(req)) A.fail(403,'Students cannot export classmates.');

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { User, Mail, BookOpen, Trash2, Camera, X, Check, Scan, ImagePlus } from 'lucide-react';
 import studentService from '../../services/studentService';
 import toast from 'react-hot-toast';
@@ -8,10 +8,12 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
     const [showFaceCapture, setShowFaceCapture] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
     const [capturing, setCapturing] = useState(false);
+    const streamRef = useRef(null), mountedRef = useRef(false);
+    useEffect(()=>{mountedRef.current=true;return ()=>{mountedRef.current=false;streamRef.current?.getTracks().forEach(track=>track.stop());};},[]);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    const hasFaceRegistered = student.faceEmbedding && student.faceEmbedding.length > 0;
+    const hasFaceRegistered = student.faceRegistered === true;
     const needsProfilePhoto = hasFaceRegistered && !student.profilePhoto;
 
     const startCamera = useCallback(async () => {
@@ -19,7 +21,8 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
             });
-            setCameraStream(stream);
+            if (!mountedRef.current) {stream.getTracks().forEach(track=>track.stop());return;}
+            streamRef.current=stream;setCameraStream(stream);
             setShowFaceCapture(true);
 
             // Wait for next tick to ensure video element is rendered
@@ -39,7 +42,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
             cameraStream.getTracks().forEach(track => track.stop());
             setCameraStream(null);
         }
-        setShowFaceCapture(false);
+        streamRef.current=null;setShowFaceCapture(false);
     }, [cameraStream]);
 
     const captureFace = useCallback(async () => {

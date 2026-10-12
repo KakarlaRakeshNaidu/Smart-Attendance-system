@@ -1,137 +1,40 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import attendanceService from '../../services/attendanceService';
-import { Calendar, Clock, Download, ClipboardList, Trash2 } from 'lucide-react';
+import api from '../../services/api';
+import { Download, ClipboardList, Trash2 } from 'lucide-react';
 import Loader from '../common/Loader';
 import toast from 'react-hot-toast';
 
-const AttendanceList = () => {
-    const [attendance, setAttendance] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetchTodayAttendance();
-    }, []);
-
-    const fetchTodayAttendance = async () => {
-        try {
-            const response = await attendanceService.getTodayAttendance();
-            setAttendance(response.attendance || []);
-        } catch (error) {
-            toast.error('Failed to fetch attendance');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDownload = async () => {
-        try {
-            const blob = await attendanceService.downloadTodayAttendanceCSV();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `attendance_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            toast.success('CSV downloaded successfully');
-        } catch (error) {
-            toast.error('Failed to download CSV. Make sure attendance is marked first.');
-        }
-    };
-
-    const handleReset = async () => {
-        if (!window.confirm('Are you sure you want to reset today\'s attendance? This action cannot be undone.')) {
-            return;
-        }
-        
-        try {
-            const response = await attendanceService.resetTodayAttendance();
-            toast.success(response.message);
-            setAttendance([]);
-        } catch (error) {
-            toast.error('Failed to reset attendance');
-        }
-    };
-
-    if (loading) {
-        return <Loader />;
+const AttendanceList = ({onAttendanceMarked}) => {
+    const [attendance,setAttendance] = useState([]),[loading,setLoading] = useState(true),[error,setError] = useState(''),[resetting,setResetting] = useState('');
+    useEffect(() => {let cancelled=false;
+        attendanceService.getTodayAttendance().then(data=>{if(!cancelled)setAttendance(data.attendance||[]);})
+            .catch(e=>{if(!cancelled)setError(e.response?.data?.message||'Failed to fetch attendance');})
+            .finally(()=>{if(!cancelled)setLoading(false);});
+        return ()=>{cancelled=true;};
+    },[]);
+    async function download(){try{const blob=await attendanceService.downloadTodayAttendanceCSV();const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='attendance_today.csv';a.click();URL.revokeObjectURL(url);toast.success('CSV downloaded successfully');}catch(e){toast.error(e.response?.data?.message||e.message||'Failed to download CSV');}}
+    async function reset(item){
+        if(resetting || !item.canMark || !window.confirm('Reset unfinalised attendance for this selected session? The saved roster will remain unchanged.'))return;
+        setResetting(item.sessionId);
+        try{await api.delete('/academic/sessions/'+item.sessionId+'/attendance');toast.success('Attendance reset for this session.');onAttendanceMarked?.();}
+        catch(e){toast.error(e.response?.data?.message||'Failed to reset attendance');}finally{setResetting('');}
     }
-
-    const records = attendance?.length > 0 ? attendance[0]?.records || [] : [];
-    const presentCount = records.filter(r => r.status === 'present').length;
-    const absentCount = records.filter(r => r.status === 'absent').length;
-
-    return (
-        <div>
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                    <span className="rounded-xl bg-emerald-500/20 px-3 py-1.5 text-sm font-semibold text-emerald-300">
-                        Present: {presentCount}
-                    </span>
-                    <span className="rounded-xl bg-red-500/20 px-3 py-1.5 text-sm font-semibold text-red-300">
-                        Absent: {absentCount}
-                    </span>
-                </div>
-                {records.length > 0 && (
-                    <div className="flex gap-2">
-                        <button onClick={handleDownload} className="btn-secondary flex items-center gap-2">
-                            <Download className="h-4 w-4" />
-                            Download CSV
-                        </button>
-                        <button onClick={handleReset} className="btn-danger flex items-center gap-2">
-                            <Trash2 className="h-4 w-4" />
-                            Reset Attendance
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {records.length > 0 ? (
-                <div className="overflow-x-auto rounded-2xl border border-zinc-800">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-zinc-950/80 border-b border-zinc-800">
-                                <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">S.No</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">Student ID</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">Name</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">Status</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {records.map((record, index) => (
-                                <tr key={index} className="border-b border-zinc-800 bg-zinc-900 transition-all duration-200 hover:bg-zinc-800">
-                                    <td className="py-3 px-4 text-sm text-zinc-400">{index + 1}</td>
-                                    <td className="py-3 px-4 text-sm text-zinc-300">{record.studentRollNo}</td>
-                                    <td className="py-3 px-4 text-sm font-semibold text-zinc-100">{record.studentName}</td>
-                                    <td className="py-3 px-4">
-                                        <span className={`rounded-xl px-2 py-1 text-xs font-semibold ${
-                                            record.status === 'present' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
-                                        }`}>
-                                            {record.status?.charAt(0).toUpperCase() + record.status?.slice(1)}
-                                        </span>
-                                    </td>
-                                    <td className="py-3 px-4 text-sm text-zinc-400">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="h-3 w-3" />
-                                            {new Date(record.markedAt).toLocaleTimeString()}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                <div className="py-12 text-center">
-                    <ClipboardList className="mx-auto mb-4 h-16 w-16 text-zinc-600" />
-                    <p className="text-lg text-zinc-300">No attendance marked for today</p>
-                    <p className="mt-2 text-sm text-zinc-500">Go to Face Recognition or Manual tab to mark attendance</p>
-                </div>
-            )}
-        </div>
-    );
+    if(loading)return <Loader/>;
+    const campus=date=>new Date(date).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+    return <div className="space-y-4">
+        {error&&<p role="alert" className="text-red-300">{error}</p>}
+        <div className="flex justify-between items-center"><h2 className="text-section">Today's Attendance</h2><button onClick={download} className="btn-secondary flex gap-2 items-center"><Download className="h-4 w-4"/>Download CSV</button></div>
+        <p className="text-sm text-zinc-400">Today uses Asia/Kolkata. Every lecture stays separate; unmarked is not absent. Legacy records remain read-only.</p>
+        {!attendance.length&&<div className="py-12 text-center"><ClipboardList className="mx-auto mb-4 h-16 w-16 text-zinc-600"/><p className="text-lg text-zinc-300">No attendance marked for today</p><p className="mt-2 text-sm text-zinc-500">Go to Live Video or Manual tab to mark attendance after selecting a session.</p></div>}
+        {attendance.map(item=><section key={item._id} className="rounded-2xl border border-zinc-800 p-4 space-y-3">
+            <div className="flex flex-wrap justify-between gap-3"><div><p className="font-semibold">{item.subject||'No subject'} · {item.class} {item.section} {item.term&&'· '+item.term}</p><p className="text-sm text-zinc-400">{item.recordType} · {campus(item.date)}{item.scheduledEnd&&' – '+campus(item.scheduledEnd)}</p>{item.sessionId&&<p className="text-sm text-zinc-400">{item.state} · {item.finalised?'Finalised':'Unfinalised'}</p>}</div>
+            {item.sessionId&&<div className="flex gap-2 items-center"><Link className="text-blue-300 text-sm underline" to={'/academic/sessions/'+item.sessionId}>Review / finalise</Link>{item.canMark&&<button disabled={!!resetting} onClick={()=>reset(item)} className="btn-danger flex items-center gap-2"><Trash2 className="h-4 w-4"/>Reset Attendance</button>}</div>}</div>
+            <p className="text-sm text-zinc-400">Present: {item.records.filter(r=>r.status==='present').length} · Late: {item.records.filter(r=>r.status==='late').length} · Absent: {item.records.filter(r=>r.status==='absent').length} · Not marked: {item.records.filter(r=>r.status==='not marked').length}</p>
+            <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-zinc-800 text-zinc-400">{['S.No','Student ID','Name','Status','Time'].map(label=><th key={label} className="text-left py-3 px-3">{label}</th>)}</tr></thead><tbody>{item.records.map((r,i)=><tr key={String(r.studentId)} className="border-b border-zinc-800"><td className="py-3 px-3">{i+1}</td><td className="px-3">{r.studentRollNo}</td><td className="px-3">{r.studentName}</td><td className="px-3">{r.status}</td><td className="px-3">{r.markedAt?new Date(r.markedAt).toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'}):'—'}</td></tr>)}</tbody></table></div>
+        </section>)}
+        <Link to="/legacy-attendance" className="text-blue-300 underline text-sm">Legacy attendance</Link>
+    </div>;
 };
-
 export default AttendanceList;

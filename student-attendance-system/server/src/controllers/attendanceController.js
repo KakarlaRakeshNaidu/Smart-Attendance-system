@@ -6,26 +6,11 @@ const faceRecognitionService = require('../services/faceRecognitionService');
 const attendanceScope = req => req.userRole === 'admin'
     ? (req.query.teacherId ? { teacherId: req.query.teacherId } : {})
     : { teacherId: req.teacherId };
-// Legacy exports preserve individual document identity; never merge same-day records or invent calendar absence.
-const legacyCSV = documents => {
-    const columns=['Record type','Legacy record ID','Timestamp','Teacher ID','Subject','Class','Section','Student ID','Name','Status'];
-    const escape = value => '"' + (/^[=+@-]/.test(String(value??'')) ? "'" : '') + String(value??'').replace(/"/g,'""') + '"';
-    const rows=[];
-    for(const doc of documents) for(const r of doc.records) rows.push(['Legacy attendance',String(doc._id),doc.date.toISOString(),String(doc.teacherId),doc.subject,doc.class,doc.section,r.studentRollNo,r.studentName,r.status]);
-    return [columns,...rows].map(row=>row.map(escape).join(',')).join('\r\n');
+const reads = require('../services/attendanceReadService');
+const exportAttendance = async(req,res,from,to) => {
+    const documents = await reads.read(req,from,to);
+    res.set({'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="attendance.csv"'}).send(reads.csv(documents));
 };
-const campusLegacyRange = value => {
-    const A=require('../services/academicService');
-    const date=A.day(value);
-    return {start:new Date(date+'T00:00:00+05:30'),end:new Date(date+'T23:59:59.999+05:30')};
-};
-const exportLegacy = async(req,res,from,to) => {
-    const start=campusLegacyRange(from).start,end=campusLegacyRange(to).end;
-    if(start>end || end-start>367*86400000) throw {status:400,publicMessage:'Choose an ordered range of at most 366 days.'};
-    const documents=await Attendance.find({...attendanceScope(req),date:{$gte:start,$lte:end}}).sort({date:1,_id:1});
-    res.set({'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="legacy-attendance.csv"'}).send(legacyCSV(documents));
-};
-
 // Helper to get start and end of day
 const getDateRange = (date) => {
     if (isNaN(new Date(date).getTime())) throw { status: 400, publicMessage: 'Invalid date. Use YYYY-MM-DD.', code: 'INVALID_DATE' };
@@ -118,81 +103,32 @@ exports.takeAttendance = async (req, res) => {
 // @desc    Get today's attendance
 // @route   GET /api/attendance/today
 // @access  Private
-exports.getTodayAttendance = async (req, res) => {
-    try {
-        const today = new Date();
-        const { start, end } = getDateRange(today);
-
-        const attendance = await Attendance.find({
-            ...attendanceScope(req),
-            date: { $gte: start, $lte: end }
-        }).populate('records.studentId', 'name studentId email');
-
-        res.status(200).json({
-            success: true,
-            count: attendance.length,
-            attendance
-        });
-    } catch (error) {
-        return respondError(res, error);
-    }
+exports.getTodayAttendance = async (req,res) => {
+    try { const day = require('../services/academicService').campusDate(new Date());
+        const attendance = await reads.read(req,day,day);res.json({success:true,count:attendance.length,attendance});
+    } catch(error) { respondError(res,error); }
 };
-
-// @desc    Get attendance by date
-// @route   GET /api/attendance/date/:date
-// @access  Private
-exports.getAttendanceByDate = async (req, res) => {
-    try {
-        const date = new Date(req.params.date);
-        const { start, end } = getDateRange(date);
-
-        const attendance = await Attendance.find({
-            ...attendanceScope(req),
-            date: { $gte: start, $lte: end }
-        }).populate('records.studentId', 'name studentId email');
-
-        res.status(200).json({
-            success: true,
-            count: attendance.length,
-            attendance
-        });
-    } catch (error) {
-        return respondError(res, error);
-    }
+exports.getAttendanceByDate = async (req,res) => {
+    try { const attendance = await reads.read(req,req.params.date,req.params.date);res.json({success:true,count:attendance.length,attendance}); }
+    catch(error) { respondError(res,error); }
 };
-
-// @desc    Get all attendance records
-// @route   GET /api/attendance
-// @access  Private
-exports.getAllAttendance = async (req, res) => {
-    try {
-        const attendance = await Attendance.find(attendanceScope(req))
-            .sort({ date: -1 })
-            .populate('records.studentId', 'name studentId email');
-
-        res.status(200).json({
-            success: true,
-            count: attendance.length,
-            attendance
-        });
-    } catch (error) {
-        return respondError(res, error);
-    }
+exports.getAllAttendance = async (req,res) => {
+    try { const attendance = await reads.read(req);res.json({success:true,count:attendance.length,attendance}); }
+    catch(error) { respondError(res,error); }
 };
-
 // @desc    Download today's attendance as CSV
 // @route   GET /api/attendance/download/today
 // @access  Private
 exports.downloadTodayAttendanceCSV=async(req,res)=>{
-    try {const date=require('../services/academicService').campusDate(new Date());await exportLegacy(req,res,date,date);}
+    try {const date=require('../services/academicService').campusDate(new Date());await exportAttendance(req,res,date,date);}
     catch(error){respondError(res,error);}
 };
 exports.downloadAttendanceCSV=async(req,res)=>{
-    try {await exportLegacy(req,res,req.params.date,req.params.date);}
+    try {await exportAttendance(req,res,req.params.date,req.params.date);}
     catch(error){respondError(res,error);}
 };
 exports.downloadAttendanceCSVRange=async(req,res)=>{
-    try {await exportLegacy(req,res,req.query.fromDate,req.query.toDate);}
+    try {await exportAttendance(req,res,req.query.fromDate,req.query.toDate);}
     catch(error){respondError(res,error);}
 };
 
@@ -439,7 +375,7 @@ exports.takeMultipleFaceAttendance = async (req, res) => {
 // @access  Private
 exports.checkFaceApiStatus = async (req, res) => {
     try {
-        const status = await faceRecognitionService.healthCheck();
+        const status = await faceRecognitionService.checkHealth();
         res.status(200).json(status);
     } catch (error) {
         return respondError(res, error);

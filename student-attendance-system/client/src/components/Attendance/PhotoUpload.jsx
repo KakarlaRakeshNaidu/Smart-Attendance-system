@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import attendanceService from '../../services/attendanceService';
 import {
     Upload,
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
+const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChange }) => {
     const fileInputRef = useRef(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviewers] = useState([]);
@@ -18,6 +18,11 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
     const [processingIndex, setProcessingIndex] = useState(null);
     const [markedStudents, setMarkedStudents] = useState([]);
     const [showResults, setShowResults] = useState(false);
+
+    const [errors,setErrors] = useState([]);
+    const [outcomes,setOutcomes] = useState([]);
+    const processingRef = useRef(false);
+    useEffect(() => {onBusyChange?.(loading);return () => onBusyChange?.(false);},[loading,onBusyChange]);
 
     const handleFileSelect = async (e) => {
         const files = Array.from(e.target.files);
@@ -64,12 +69,15 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
     };
 
     const processAllPhotos = async () => {
+        if (processingRef.current) return;
+        if (!sessionId || disabledReason) {toast.error(disabledReason || 'Select a lecture session before marking attendance.');return;}
+        setErrors([]);setOutcomes([]);
         if (selectedFiles.length === 0) {
             toast.error('Please select at least one image');
             return;
         }
 
-        setLoading(true);
+        processingRef.current = true;setLoading(true);
         const allMarkedStudents = new Set(); // Use Set to avoid duplicates
         let totalPhotosProcessed = 0;
 
@@ -90,6 +98,7 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
                     image: imageBase64
                 }, sessionId);
 
+                setOutcomes(prev=>[...prev,'Photo '+(i+1)+': '+(response.message || 'Recognition completed.')+(response.unrecognizedCount ? ' Unrecognised faces: '+response.unrecognizedCount : '')]);
                 if (response.success && response.recognized) {
                     response.recognized.forEach(student => {
                         // Add to set with unique key to avoid duplicates
@@ -106,15 +115,15 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
                     toast.success(`Photo ${i + 1}/${selectedFiles.length}: Processed`);
                 } else {
                     totalPhotosProcessed++;
-                    toast(`Photo ${i + 1}/${selectedFiles.length}: No new students found`);
+                    toast('Photo ' + (i + 1) + ': No eligible students recognised.');
                 }
             } catch (error) {
-                totalPhotosProcessed++;
-                toast.error(error.response?.data?.message || `Photo ${i + 1}: Error processing`);
+                const message = 'Photo '+(i+1)+': '+(error.response?.data?.message || 'Error processing');
+                setErrors(prev=>[...prev,message]);toast.error(message);
             }
         }
 
-        setLoading(false);
+        processingRef.current = false;setLoading(false);
         setProcessingIndex(null);
         
         // Convert Set back to array and remove duplicates by studentId
@@ -129,7 +138,7 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
             }, []);
 
         setMarkedStudents(uniqueStudents);
-        setShowResults(true);
+        setShowResults(totalPhotosProcessed > 0);
 
         if (onAttendanceMarked) {
             onAttendanceMarked();
@@ -143,6 +152,9 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
 
     return (
         <div className="space-y-6 py-8">
+            {(!sessionId || disabledReason) && <p className="text-amber-300">{disabledReason || 'Select a lecture session before marking attendance.'}</p>}
+            {outcomes.map((message,i) => <p className="text-zinc-300" key={i}>{message}</p>)}
+            {errors.map((message,i) => <p role="alert" className="text-red-300" key={i}>{message}</p>)}
             {/* File Upload Section */}
             <div
                 className="relative cursor-pointer rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/30 p-8 text-center transition-all hover:border-green-500 hover:bg-zinc-900/50"
@@ -217,7 +229,7 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId }) => {
                     {/* Process Button */}
                     <button
                         onClick={processAllPhotos}
-                        disabled={loading || selectedFiles.length === 0}
+                        disabled={loading || selectedFiles.length === 0 || !sessionId || !!disabledReason}
                         className="w-full rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 font-semibold text-zinc-950 transition-all hover:from-green-400 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {loading ? (

@@ -1,57 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import studentService from '../../services/studentService';
 import attendanceService from '../../services/attendanceService';
 import { Check, X, Users, Save } from 'lucide-react';
 import Loader from '../common/Loader';
 import toast from 'react-hot-toast';
+import api from '../../services/api';
 
-const TakeAttendance = ({ onAttendanceMarked }) => {
+const TakeAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChange }) => {
     const [students, setStudents] = useState([]);
     const [attendance, setAttendance] = useState({});
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
+    const [error,setError] = useState('');
+    const lock = useRef(false);
+    useEffect(() => {onBusyChange?.(submitting);return () => onBusyChange?.(false);},[submitting,onBusyChange]);
     useEffect(() => {
-        fetchStudentsAndTodayAttendance();
-    }, []);
-
-    const fetchStudentsAndTodayAttendance = async () => {
-        try {
-            // Fetch students and today's attendance in parallel
-            const [studentsResponse, todayAttendanceResponse] = await Promise.all([
-                studentService.getAllStudents(),
-                attendanceService.getTodayAttendance().catch(() => ({ attendance: [] }))
-            ]);
-
-            const studentList = studentsResponse.students || [];
-            setStudents(studentList);
-
-            // Create a map of today's attendance records by student ID
-            // Response structure: attendance[0].records where each record has studentId (populated or id string)
-            const attendanceData = todayAttendanceResponse.attendance || [];
-            const todayRecords = attendanceData.length > 0 ? attendanceData[0]?.records || [] : [];
-            const attendanceMap = {};
-            todayRecords.forEach(record => {
-                // studentId can be populated object with _id, or just the id string
-                const studentId = record.studentId?._id || record.studentId;
-                if (studentId) {
-                    attendanceMap[studentId] = record.status;
-                }
-            });
-
-            // Initialize attendance: use today's attendance if exists, otherwise default to absent
-            const initialAttendance = {};
-            studentList.forEach(student => {
-                initialAttendance[student._id] = attendanceMap[student._id] || 'absent';
-            });
-            setAttendance(initialAttendance);
-        } catch (error) {
-            toast.error('Failed to fetch students');
-        } finally {
-            setLoading(false);
-        }
-    };
-
+        let cancelled = false;
+        if (!sessionId) {setLoading(false);setStudents([]);return;}
+        setLoading(true);
+        api.get('/academic/sessions/'+sessionId).then(({data}) => {
+            if (cancelled) return;
+            setStudents(data.item.roster.map(r => ({_id:r.studentId,name:r.name,studentId:r.rollNo})));
+            setAttendance(Object.fromEntries(data.item.records.map(r => [r.studentId,r.status])));
+        }).catch(e => {if (!cancelled) setError(e.response?.data?.message || 'Failed to fetch session roster');})
+            .finally(() => {if (!cancelled) setLoading(false);});
+        return () => {cancelled = true;};
+    },[sessionId]);
     const toggleAttendance = (studentId) => {
         setAttendance(prev => ({
             ...prev,
@@ -77,21 +52,23 @@ const TakeAttendance = ({ onAttendanceMarked }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setSubmitting(true);
+        if (lock.current || !sessionId || disabledReason) return;
+        lock.current = true;setSubmitting(true);
 
         try {
-            const records = Object.entries(attendance).map(([studentId, status]) => ({
+            const records = Object.entries(attendance).filter(([,status])=>status).map(([studentId, status]) => ({
                 studentId,
                 status
             }));
 
-            await attendanceService.takeAttendance({ records });
+            if (!records.length) {toast.error('Select at least one attendance status.');return;}
+            await api.post('/academic/sessions/'+sessionId+'/attendance',{records});
             toast.success('Attendance marked successfully!');
             if (onAttendanceMarked) onAttendanceMarked();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to mark attendance');
         } finally {
-            setSubmitting(false);
+            lock.current = false;setSubmitting(false);
         }
     };
 
@@ -99,12 +76,13 @@ const TakeAttendance = ({ onAttendanceMarked }) => {
         return <Loader />;
     }
 
+    if (error) return <p role="alert" className="text-red-300">{error}</p>;
     if (students.length === 0) {
         return (
             <div className="py-12 text-center">
                 <Users className="mx-auto mb-4 h-16 w-16 text-zinc-600" />
-                <p className="text-lg text-zinc-300">No students registered yet</p>
-                <p className="mt-2 text-sm text-zinc-500">Add students first to take attendance</p>
+                <p className="text-lg text-zinc-300">{sessionId ? 'No eligible students for this session' : 'Select a lecture session'}</p>
+                <p className="mt-2 text-sm text-zinc-500">Profiles must be enrolled by Admin for this lecture date before taking attendance</p>
             </div>
         );
     }
@@ -114,6 +92,7 @@ const TakeAttendance = ({ onAttendanceMarked }) => {
 
     return (
         <div>
+            <p className="text-sm text-zinc-400 mb-3">Unmarked students stay not marked until you review and finalise this session.</p>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
                     <p className="text-sm text-zinc-400">
@@ -123,10 +102,10 @@ const TakeAttendance = ({ onAttendanceMarked }) => {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <button type="button" onClick={markAllPresent} className="rounded-xl bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-300 transition-all duration-200 hover:bg-emerald-500/30">
+                    <button type="button" disabled={submitting || !!disabledReason} onClick={markAllPresent} className="rounded-xl bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-300 transition-all duration-200 hover:bg-emerald-500/30">
                         Mark All Present
                     </button>
-                    <button type="button" onClick={markAllAbsent} className="rounded-xl bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-300 transition-all duration-200 hover:bg-red-500/30">
+                    <button type="button" disabled={submitting || !!disabledReason} onClick={markAllAbsent} className="rounded-xl bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-300 transition-all duration-200 hover:bg-red-500/30">
                         Mark All Absent
                     </button>
                 </div>
@@ -135,7 +114,7 @@ const TakeAttendance = ({ onAttendanceMarked }) => {
             <form onSubmit={handleSubmit}>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                     {students.map((student) => (
-                        <div key={student._id} onClick={() => toggleAttendance(student._id)} className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all duration-200 ${attendance[student._id] === 'present' ? 'border-emerald-900 bg-emerald-500/10 hover:bg-emerald-500/20' : 'border-red-900 bg-red-500/10 hover:bg-red-500/20'}`}>
+                        <div key={student._id} onClick={() => {if (!submitting && !disabledReason) toggleAttendance(student._id);}} className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all duration-200 ${attendance[student._id] === 'present' ? 'border-emerald-900 bg-emerald-500/10 hover:bg-emerald-500/20' : attendance[student._id] === 'absent' ? 'border-red-900 bg-red-500/10 hover:bg-red-500/20' : 'border-zinc-700 bg-zinc-900 hover:bg-zinc-800'}`}>
                             <div className="flex items-center space-x-3">
                                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${attendance[student._id] === 'present' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
                                     <span className={`font-semibold ${attendance[student._id] === 'present' ? 'text-emerald-300' : 'text-red-300'}`}>
@@ -147,18 +126,21 @@ const TakeAttendance = ({ onAttendanceMarked }) => {
                                     <p className="text-sm text-zinc-500">ID: {student.studentId}</p>
                                 </div>
                             </div>
-                            <div className={`rounded-xl p-2 ${attendance[student._id] === 'present' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                            <select aria-label={'Status '+student.studentId} className="input-field max-w-36" value={attendance[student._id] || ''} disabled={submitting || !!disabledReason} onClick={e=>e.stopPropagation()} onChange={e=>setAttendance(prev=>({...prev,[student._id]:e.target.value}))}>
+                                <option value="">Not marked</option><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option>
+                            </select>
+                            <div className={`rounded-xl p-2 ${attendance[student._id] === 'present' ? 'bg-emerald-500' : attendance[student._id] === 'absent' ? 'bg-red-500' : 'bg-zinc-700'}`}>
                                 {attendance[student._id] === 'present' ? (
                                     <Check className="h-5 w-5 text-white" />
                                 ) : (
-                                    <X className="h-5 w-5 text-white" />
+                                    attendance[student._id] === 'absent' ? <X className="h-5 w-5 text-white" /> : <span className="text-white">{attendance[student._id] === 'late' ? 'Late' : '—'}</span>
                                 )}
                             </div>
                         </div>
                     ))}
                 </div>
 
-                <button type="submit" disabled={submitting} className="w-full btn-success mt-6 py-3 flex items-center justify-center gap-2">
+                <button type="submit" disabled={submitting || !!disabledReason} className="w-full btn-success mt-6 py-3 flex items-center justify-center gap-2">
                     {submitting ? (
                         <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (

@@ -55,10 +55,10 @@ const Dashboard = () => {
             let records = [];
 
             if (attendance.length > 0) {
-                records = attendance.flatMap(entry=>entry.records||[]);
+                records = attendance.filter(entry=>entry.state !== 'cancelled').flatMap(entry=>(entry.records||[]).filter(r=>r.status !== 'not marked'));
                 records.forEach(record => {
                     if (record.status === 'present' || record.status === 'late') presentCount++;
-                    else absentCount++;
+                    else if (record.status === 'absent') absentCount++;
                 });
             }
 
@@ -73,15 +73,16 @@ const Dashboard = () => {
 
             const allAttendance = allAttendanceRes.attendance || [];
             const chartPoints = allAttendance
+                .filter(entry => entry.state !== 'cancelled')
                 .slice(0, 7)
                 .reverse()
                 .map((entry) => {
                     const entryRecords = entry.records || [];
                     const present = entryRecords.filter((item) => ['present', 'late'].includes(item.status)).length;
                     return {
-                        day: new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short' }),
+                        day: new Date(entry.date).toLocaleString('en-IN', { timeZone:'Asia/Kolkata', month:'short',day:'numeric',hour:'2-digit',minute:'2-digit' }),
                         present,
-                        total: entryRecords.length
+                        total: entryRecords.filter(r=>r.status !== 'not marked').length
                     };
                 });
 
@@ -104,21 +105,21 @@ const Dashboard = () => {
             link: '/students'
         },
         {
-            title: "Legacy records today",
+            title: "Today's Attendance",
             value: stats.todayAttendance,
             icon: ClipboardCheck,
             subtitle: 'Marked records today',
             link: '/attendance'
         },
         {
-            title: 'Legacy present / late today',
+            title: 'Present Today',
             value: stats.presentCount,
             icon: TrendingUp,
             subtitle: 'Students present',
             link: '/attendance'
         },
         {
-            title: 'Legacy marked absent today',
+            title: 'Absent Today',
             value: stats.absentCount,
             icon: Clock,
             subtitle: 'Need follow-up',
@@ -140,6 +141,7 @@ const Dashboard = () => {
                 </div>
             </Card>
 
+            <p className="text-sm text-zinc-400">Attendance counts are marked records across separate lectures and legacy records, not unique students. Unmarked and cancelled session records are excluded.</p>
             {/* Stat cards — skeletons while loading */}
             {loading ? <SkeletonStatCards /> : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -168,7 +170,7 @@ const Dashboard = () => {
             {loading ? <SkeletonChart /> : (
                 <Card className="p-6">
                     <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-white">Legacy attendance trend</h2>
+                        <h2 className="text-lg font-semibold text-white">Attendance Trend</h2>
                         <span className="text-xs text-zinc-400">Last 7 sessions</span>
                     </div>
 
@@ -197,7 +199,7 @@ const Dashboard = () => {
                         <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-950 text-zinc-400">
                             <Calendar className="mb-2 h-10 w-10 text-zinc-600" />
                             <p className="font-medium">No attendance trend data yet</p>
-                            <p className="text-sm text-zinc-500">Legacy history only. Select My courses/classes for session attendance.</p>
+                            <p className="text-sm text-zinc-500">Session attendance and clearly labelled legacy records.</p>
                         </div>
                     )}
                 </Card>
@@ -212,7 +214,7 @@ const Dashboard = () => {
             ) : (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-white">Recent legacy marks</h2>
+                        <h2 className="text-lg font-semibold text-white">Recent Attendance</h2>
                         <Link to="/attendance" className="text-sm font-medium text-zinc-300 hover:text-white">View All</Link>
                     </div>
 
