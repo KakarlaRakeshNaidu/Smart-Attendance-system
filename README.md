@@ -420,7 +420,3 @@ gunicorn       ← Production WSGI server
 ## License
 
 MIT License
-
-## Restoration verification
-
-The current Account-based RBAC implementation is preserved. See [VERIFICATION.md](VERIFICATION.md) for crash fixes, startup commands, tested flows and the remaining real-webcam verification.
