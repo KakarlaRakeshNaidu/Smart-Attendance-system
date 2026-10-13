@@ -87,7 +87,7 @@ coverage/
 /.graphify/
 /.github/copilot-instructions.md
 
-# Disposable test outputs; meaningful source tests remain trackable
+# Disposable test outputs and local test helpers
 /student-attendance-system/server/scripts/serve-fixtures.js
 test-results/
 playwright-report/
@@ -116,3 +116,17 @@ coverage.xml
 .tox/
 .nox/
 .hypothesis/
+
+# Source tests stay local at the project owner's request
+# These match test folders/files, not feature source or migration/startup scripts.
+test/
+tests/
+__tests__/
+*.test.js
+*.test.jsx
+*.test.ts
+*.test.tsx
+*.spec.js
+*.spec.jsx
+*.spec.ts
+*.spec.tsx
