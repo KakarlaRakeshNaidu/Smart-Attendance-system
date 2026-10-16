@@ -1,422 +1,294 @@
 # Smart Attendance System
 
-A modern, AI-powered attendance management system featuring **face recognition** technology. Built with React, Node.js, and Python — run the entire project with a **single command**.
+A React, Express and Python application for course-based attendance with face recognition, Student/Teacher/Admin portals, analytics, notifications, corrections and semester reports.
 
----
+## Features
 
-## Quick Start
+### Accounts and Portals
 
-```bash
-# 1. Install all dependencies (Node.js + Python)
-npm run setup
+| Role | Features |
+|------|----------|
+| Student | Own course enrolments, lecture history, course-wise percentages, profile/photo, password change, analytics, notifications, correction requests and personal term reports |
+| Teacher | Dashboard, Student management, face registration, assigned courses, lecture attendance, profile/photo/password updates, analytics, notifications, correction review and scoped reports |
+| Administrator | Profile/account counts, account search and status controls, Student/Teacher directories, account creation and activation, academic management, institution-wide attendance browsing, analytics, escalated corrections and reports |
 
-# 2. Start everything with one command
-npm run dev
+- Shared account authentication with server-enforced roles, ownership and assignment checks.
+- Student login uses college email. Authorised account creation supports Student/Teacher role selection; Teachers can create Student accounts only.
+- Both Teacher and Admin can add Student profiles. Profile creation, account activation and course enrolment are separate actions.
+- Expiring, one-use activation links, invitation reissue and shared password change. Public registration is disabled.
+
+### Courses and Classes
+
+- Academic terms, class groups, courses and course offerings.
+- Teacher assignments and Student enrolments with effective dates.
+- Lecture creation, scheduling, cancellation, roster selection and attendance finalisation.
+- Separate attendance for multiple lectures on the same day.
+- Historical rosters and archived academic records preserve past attendance.
+- Campus dates and times use **Asia/Kolkata**.
+
+### Attendance Management
+
+Teachers select an authorised course/class and lecture on the **Attendance** page.
+
+| Tab | Function |
+|-----|----------|
+| Live Video | Camera start/stop, preview, capture, Single Face and Multiple Faces recognition |
+| Photo Upload | Attendance recognition from classroom photos |
+| Manual | Present, absent and late marking with group controls |
+| Today | Today's attendance with individual lecture context |
+| Download | Single Date and Date Range CSV downloads |
+
+- Face matching is restricted to the server-authorised session roster; repeated recognition does not duplicate attendance.
+- Unmarked entries remain **Not marked** until explicit finalisation, when remaining eligible Students become absent.
+- Cancelled lectures reject marking. Reset is limited to authorised, unfinalised sessions.
+- Teacher dashboard includes counts, **Attendance Trend** for the last seven sessions and **Recent Attendance**.
+- Student-list CSV export, Student photos, face registration and Teacher profile/photo/password functions remain available.
+
+### Attendance Analytics
+
+Course-wise percentages, monthly trends, Student breakdowns, below-minimum lists, filters and pagination use one shared server calculation:
+
+```text
+Attendance % = (present + late) / eligible completed, finalised sessions × 100
 ```
 
-Three services start automatically:
+- Students see their own results; Teachers see lectures they taught; Administrators can filter institution-wide results.
+- Saved historical rosters determine eligibility. Scheduled, cancelled, unfinalised and unmapped legacy records are excluded.
+- Zero eligible sessions shows **No completed sessions**. Inconsistent finalised marks show **Incomplete data** instead of a percentage.
+- Aggregates use combined counts, not averages of percentages. Threshold comparisons use exact counts before display rounding.
+- The attendance minimum is configurable per term by Admin, initially **75%**. It is an application setting, not an examination-eligibility decision.
 
-| Service | URL | Label |
-|---------|-----|-------|
-| 🐍 Face Recognition API | http://localhost:5001 | PYTHON |
-| 🟢 Node.js API | http://localhost:5000 | SERVER |
-| ⚡ React Frontend | http://localhost:5173 | CLIENT |
+### Low-Attendance Notifications
 
----
+- Saved, in-app notifications for eligible Student and Teacher accounts, using the term minimum and authorised analytics scope.
+- Unread indicators, individual/all-read controls, status filters and pagination.
+- Active, resolved and evaluation-unavailable states; recovery resolves a warning and a later drop can reactivate it.
+- Duplicate prevention and durable reconciliation after relevant attendance, account, academic or minimum-setting changes.
 
-## Prerequisites
+### Attendance Corrections
 
-| Requirement | Version | Notes |
-|-------------|---------|-------|
-| Node.js | ≥ 18.0.0 | For server and client |
-| Python | ≥ 3.8 | For face recognition API |
-| MongoDB | Atlas or local | Connection string in `.env` |
-| HF Token | — | Required for HuggingFace Space API (set `HF_TOKEN` in `.env`) |
-| Webcam | — | Required for live face recognition |
+- Students request correction of their own eligible finalised entry, provide a reason, track decisions and withdraw unresolved requests.
+- Authorised teaching Teachers approve, reject or escalate; Admin handles escalated requests or those without an eligible Teacher reviewer.
+- Pending Teacher review, Escalated to Admin, Approved, Rejected, Withdrawn and Stale states.
+- Concurrency checks prevent conflicting decisions. Approved changes preserve original marking details and append an audit record.
+- Corrected attendance is reflected in analytics and notification reconciliation.
 
----
+### Semester Reports
 
-## Installation
+- Student personal term summaries, Teacher lecture-scoped summaries and Admin Student/course/class/institution summaries.
+- Term, course, class, Teacher, Student and date filters according to role permissions.
+- Paginated preview and full filtered CSV export using the same calculations and access checks.
+- Present/late/absent totals, eligible sessions, weighted percentages, current term minimum, scope, generation time and data-quality states.
+- Unicode-safe CSV output, spreadsheet-formula protection and explicit export limits.
 
-### 1. Clone the repository
-```bash
-git clone <repository-url>
-cd smart-attendance
-```
+### Legacy Records and Themes
 
-### 2. Install all dependencies at once
-```bash
-npm run setup
-```
-This installs Node.js packages for root, server, and client, then installs the existing Python requirements into `student-attendance-system/server/python/.venv`. Startup uses that environment automatically.
-
-### 3. Configure environment variables
-
-Edit `student-attendance-system/server/.env`:
-```env
-PORT=5000
-MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/attendance_system
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=7d
-FACE_API_URL=http://localhost:5001/api
-HF_TOKEN=hf_your_token_here
-FRONTEND_URL=https://your-deployed-frontend.vercel.app
-```
-
-Edit `student-attendance-system/client/.env`:
-```env
-VITE_API_URL=http://localhost:5000/api
-VITE_API_BASE_URL=http://localhost:5000
-```
-
-> 💡 Get your `HF_TOKEN` at https://huggingface.co/settings/tokens — required to avoid ZeroGPU rate limits on the face recognition Space.
-
-### 4. Run the project
-```bash
-npm run dev
-```
-
----
-
-## Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start all 3 services (Python + Node + React) |
-| `npm run setup` | Install all dependencies (Node + Python) |
-| `npm run install:all` | Install Node.js dependencies only |
-| `npm run install:python` | Install Python dependencies only |
-
----
-
-## Project Structure
-
-```
-smart-attendance/
-│
-├── package.json                          ← Root orchestrator (run all commands here)
-├── README.md
-├── .gitignore
-│
-└── student-attendance-system/
-    │
-    ├── client/                           ── React + Vite Frontend ──────────────────
-    │   ├── index.html
-    │   ├── vite.config.js
-    │   ├── package.json
-    │   ├── .env                          ← VITE_API_URL, VITE_API_BASE_URL
-    │   └── src/
-    │       ├── App.jsx                   ← Routes & layout
-    │       ├── index.jsx                 ← React entry point
-    │       ├── index.css                 ← Global styles & design tokens
-    │       │
-    │       ├── components/
-    │       │   ├── Auth/
-    │       │   │   ├── Login.jsx         ← Teacher login form
-    │       │   │   ├── Register.jsx      ← Teacher registration
-    │       │   │   └── ChangePassword.jsx
-    │       │   │
-    │       │   ├── Dashboard/
-    │       │   │   └── Dashboard.jsx     ← Stats overview
-    │       │   │
-    │       │   ├── Students/
-    │       │   │   ├── StudentList.jsx   ← All students grid
-    │       │   │   ├── AddStudent.jsx    ← Add student + face capture
-    │       │   │   └── StudentCard.jsx   ← Student card + face register
-    │       │   │
-    │       │   ├── Attendance/
-    │       │   │   ├── FaceAttendance.jsx     ← Face recognition camera
-    │       │   │   ├── TakeAttendance.jsx     ← Manual attendance
-    │       │   │   ├── AttendanceList.jsx     ← Today's records
-    │       │   │   └── DownloadAttendance.jsx ← CSV export
-    │       │   │
-    │       │   ├── Profile/
-    │       │   │   ├── TeacherProfile.jsx ← View profile
-    │       │   │   ├── EditProfile.jsx    ← Edit name, subject, bio
-    │       │   │   └── PhotoUpload.jsx    ← Upload profile photo
-    │       │   │
-    │       │   └── common/
-    │       │       ├── Navbar.jsx         ← Navigation bar (responsive, hamburger menu)
-    │       │       ├── Sidebar.jsx        ← Slide-in drawer on mobile, fixed on desktop
-    │       │       ├── Loader.jsx         ← Loading spinner
-    │       │       ├── PageSkeleton.jsx   ← Full-page skeleton loader
-    │       │       ├── Skeleton.jsx       ← Inline skeleton placeholder
-    │       │       └── PrivateRoute.jsx   ← Auth guard
-    │       │
-    │       ├── context/
-    │       │   └── AuthContext.jsx        ← Auth state & JWT management
-    │       │
-    │       ├── services/                  ← API call functions
-    │       │   ├── api.js                 ← Axios instance + interceptors
-    │       │   ├── authService.js
-    │       │   ├── studentService.js
-    │       │   ├── attendanceService.js
-    │       │   └── teacherService.js
-    │       │
-    │       └── utils/
-    │           └── (helpers)
-    │
-    └── server/                           ── Node.js Backend + Python API ──────────
-        ├── package.json
-        ├── .env                          ← PORT, MONGODB_URI, JWT_SECRET, FACE_API_URL
-        ├── .env.example
-        │
-        ├── uploads/                      ← Profile photos (served as static files)
-        │   ├── teachers/
-        │   │   └── {TeacherName}/        ← e.g. uploads/teachers/Sam/photo.jpg
-        │   └── students/
-        │       └── {StudentId}/          ← e.g. uploads/students/STU001/photo.jpg
-        │
-        ├── python/                       ── Face Recognition Service (port 5001) ──
-        │   ├── api_server.py             ← Flask REST API
-        │   ├── requirements.txt          ← Python dependencies
-        │   ├── Dockerfile                ← Container image for Python service
-        │   └── models/
-        │       └── hf_model.py           ← HuggingFace Gradio Space client
-        │
-        └── src/
-            ├── app.js                    ← Express app setup & static serving
-            │
-            ├── config/
-            │   └── db.js                 ← MongoDB connection
-            │
-            ├── models/                   ── MongoDB Schemas ──────────────────────
-            │   ├── Teacher.js            ← name, email, password, subject, profilePhoto
-            │   ├── Student.js            ← studentId, name, faceEmbedding, profilePhoto
-            │   └── Attendance.js         ← teacherId, date, records[]
-            │
-            ├── controllers/              ── Route Handlers ───────────────────────
-            │   ├── authController.js     ← register, login
-            │   ├── teacherController.js  ← getProfile, updateProfile, uploadPhoto
-            │   ├── studentController.js  ← CRUD, registerFace, updatePhoto
-            │   └── attendanceController.js ← take, face, download CSV
-            │
-            ├── routes/                   ── API Routes ───────────────────────────
-            │   ├── authRoutes.js         ← POST /api/auth/register|login
-            │   ├── teacherRoutes.js      ← GET/PUT /api/teacher/profile
-            │   ├── studentRoutes.js      ← CRUD /api/students
-            │   └── attendanceRoutes.js   ← /api/attendance/*
-            │
-            ├── middleware/
-            │   ├── authMiddleware.js     ← JWT verification (protect)
-            │   ├── uploadMiddleware.js   ← Multer (named folder routing)
-            │   └── errorHandler.js       ← Global error handler
-            │
-            ├── services/
-            │   ├── faceRecognitionService.js ← Axios calls to Python API
-            │   ├── csvService.js             ← CSV generation
-            │   ├── jwtService.js             ← Token helpers
-            │   └── uploadService.js          ← Legacy (unused)
-            │
-            └── utils/
-                ├── helpers.js            ← Hash, token, file utils
-                └── validators.js         ← Input validation
-```
-
-## Codebase Graph (Graphify)
-
-The generated knowledge graph in `graphify-out/` helps AI tools navigate the
-project without loading all source files. For codebase questions, query it with
-`graphify query "<question>"`; use `graphify path "<A>" "<B>"` or
-`graphify explain "<concept>"` to explore relationships. After changing code,
-refresh the graph with `graphify update .`. The AST cache is not tracked.
-
----
-
-## Face Recognition Model
-
-### Model: HuggingFace Gradio Space (`nitishsaini44/baffaloL_model`)
-
-The system uses a **remote HuggingFace Gradio Space** for face detection and embedding extraction — no heavy local GPU/model files required. The Python server calls the Space via `gradio_client` and receives 512-dim face embeddings in return.
-
-> 🔗 Space: https://huggingface.co/spaces/nitishsaini44/baffaloL_model
-
-#### Embedding & Matching
-
-| Property | Value |
-|----------|-------|
-| **Embedding dimension** | 512-dimensional float vector |
-| **Similarity metric** | Cosine similarity |
-| **Recognition threshold** | `0.5` (configurable) |
-| **Batch method** | Vectorized matrix multiplication (NumPy BLAS) |
-| **Hardware** | ZeroGPU on HuggingFace Space (GPU-accelerated) |
-| **Auth** | `HF_TOKEN` env var (avoids ZeroGPU rate limits) |
-
-#### How Recognition Works
-
-```
-Webcam frame (base64)
-        │
-        ▼
-  Raw image bytes
-        │
-        ▼
-┌──────────────────────────────┐
-│  HuggingFace Gradio Space    │  ← Remote API call via gradio_client
-│  nitishsaini44/baffaloL_model│  ← Detects faces + extracts embeddings
-└──────────────┬───────────────┘
-               │  [{bbox: [...], embedding: [...512 floats]}, ...]
-               ▼
-  Cosine Similarity vs all registered students
-  (parallelized: one matrix multiply for N students × M faces)
-               │
-               ▼
-  Best match score > 0.5  →  Student identified ✅
-  Best match score ≤ 0.5  →  Unknown face ❌
-```
-
-#### Enrollment Flow
-1. Student added to MongoDB via Node.js API
-2. Face image sent to Python `/api/add-student`
-3. HuggingFace Space extracts 512-dim embedding
-4. Embedding saved to `Student.faceEmbedding[]` in MongoDB
-
-#### Recognition Flow (Single Face)
-1. Camera captures frame → base64 encoded
-2. Node.js `POST /api/attendance/face` → Python `/api/recognize`
-3. HF Space detects & embeds the face
-4. Vectorized cosine similarity against all enrolled students
-5. Best match above threshold → attendance marked in MongoDB
-
-#### Recognition Flow (Multiple Faces)
-1. Full classroom photo → base64 encoded
-2. Python `/api/recognize-multiple` sends image to HF Space
-3. Space returns all detected face embeddings
-4. All embeddings stacked into matrix `(N_faces × 512)`
-5. Single matrix multiply gives all `N_faces × N_students` similarities at once
-6. Each face matched to highest-scoring student above threshold
-
-#### Python Dependencies
-
-```txt
-numpy          ← Vectorized embedding math
-gradio_client  ← Client for HuggingFace Gradio Space API
-flask          ← REST API server
-flask-cors     ← Cross-origin support for Node.js requests
-pymongo        ← MongoDB driver
-python-dotenv  ← Auto-loads server/.env at startup
-gunicorn       ← Production WSGI server
-```
-
----
-
-## Key Features
-
-### 🎯 Face Recognition (AI-Powered)
-- **HuggingFace Gradio Space** (`nitishsaini44/baffaloL_model`) — GPU-accelerated remote inference, no local model files needed
-- Real-time webcam capture with live preview
-- Single-student attendance OR full classroom batch recognition
-- Vectorized cosine similarity for fast recognition regardless of student count
-
-### 📋 Attendance Management
-- Manual tab — checkbox-based marking for all students
-- Face recognition tab — camera-based auto-marking
-- Today's Attendance tab — view/review current session
-- CSV Download — export by date for reporting
-
-### 👤 User Management
-- Teacher registration & JWT authentication
-- Editable teacher profile (name, subject, bio, photo)
-- Student profiles with face registration and named photo folders
-
-### 📁 Profile Photo Storage
-- Teacher photos → `uploads/teachers/{name}/`
-- Student photos → `uploads/students/{studentId}/`
-- Served as static files at `http://localhost:5000/uploads/...`
-
----
+- **Legacy attendance** remains accessible. Admin can preview and explicitly map supported records to validated course offerings without replacing the originals.
+- **Light / Dark / System** themes apply throughout the application, with saved preferences and system/cross-tab updates.
+- Responsive sign-in and shared controls, readable charts/tables and accessible password visibility. Photos and camera video retain their original colours.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | React 18, Vite, React Router, Axios |
-| **Styling** | Tailwind CSS with custom design tokens |
-| **Backend API** | Node.js, Express.js, JWT Auth, Multer |
-| **Face Recognition** | Python 3.8+, Flask, HuggingFace Gradio Space (`gradio_client`), Gunicorn |
-| **Database** | MongoDB Atlas with Mongoose ODM |
-| **Deployment** | Docker (Python service), Vercel (client) |
-| **Orchestration** | `concurrently` — all 3 services via single `npm run dev` |
+| Frontend | React 18, Vite 5, React Router, Axios |
+| UI and charts | Tailwind CSS 3, Lucide, React Hot Toast, Recharts |
+| Backend | Node.js, Express 4, Mongoose 8, JWT, bcryptjs, Multer |
+| Database | MongoDB |
+| Face recognition | Python, Flask, NumPy, PyMongo, HuggingFace Gradio client |
+| CSV and service startup | csv-writer, concurrently |
 
----
+## Getting Started
 
-## API Reference
+**Requirements:** Node.js 18+, Python 3.10+, MongoDB and network access for the remote face model. Live Video also requires browser camera permission on localhost or HTTPS.
 
-### Authentication (`/api/auth`)
-| Method | Endpoint | Body | Description |
-|--------|----------|------|-------------|
-| POST | `/api/auth/register` | `{name, email, password}` | Register a teacher |
-| POST | `/api/auth/login` | `{email, password}` | Login → returns JWT |
+From the repository root:
 
-### Teacher (`/api/teacher`) — 🔒 requires JWT
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/teacher/profile` | Get current teacher profile |
-| PUT | `/api/teacher/profile` | Update name, subject, description |
-| POST | `/api/teacher/profile/photo` | Upload profile photo (multipart) |
-| PUT | `/api/teacher/change-password` | Change password |
+```bash
+npm run setup
+```
 
-### Students (`/api/students`) — 🔒 requires JWT
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/students` | Get all students |
-| POST | `/api/students` | Add student (+ optional face) |
-| GET | `/api/students/:id` | Get single student |
-| PUT | `/api/students/:id` | Update student details |
-| DELETE | `/api/students/:id` | Delete student |
-| POST | `/api/students/:id/register-face` | Register/update face embedding |
-| PUT | `/api/students/:id/profile-photo` | Update profile photo |
-| GET | `/api/students/download/csv` | Export student list CSV |
+Configure the environment variables below, then start all three services:
 
-### Attendance (`/api/attendance`) — 🔒 requires JWT
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/attendance` | Manual attendance (records array) |
-| GET | `/api/attendance` | Get all attendance records |
-| GET | `/api/attendance/today` | Get today's attendance |
-| GET | `/api/attendance/date/:date` | Get attendance by date |
-| POST | `/api/attendance/face` | Face recognition (single face) |
-| POST | `/api/attendance/face-multiple` | Face recognition (classroom) |
-| GET | `/api/attendance/face-status` | Check face API connectivity |
-| DELETE | `/api/attendance/today` | Reset today's attendance |
-| GET | `/api/attendance/download/today` | Download today CSV |
-| GET | `/api/attendance/download/:date` | Download date CSV |
+```bash
+npm run dev
+```
 
-### Face Recognition API (Python, port 5001)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Quick status check (no DB ping) |
-| GET | `/api/health/full` | Full check incl. DB + face count |
-| POST | `/api/add-student` | Extract & save face embedding |
-| POST | `/api/remove-student` | Clear face embedding |
-| POST | `/api/recognize` | Recognize single face |
-| POST | `/api/recognize-multiple` | Recognize all faces in image |
-| POST | `/api/get-embedding` | Extract embedding (no save) |
-| GET | `/api/registered-count` | Count students with faces |
+| Service | Local URL |
+|---------|-----------|
+| Frontend | http://localhost:5173/login |
+| Express API | http://localhost:5000/api |
+| Face service | http://localhost:5001/api |
 
----
+The face service extracts embeddings through the remote HuggingFace model and matches them using cosine similarity with a `0.5` threshold. A face embedding is the numeric representation used for recognition. Profile-photo replacement is separate from face registration. If the remote model is unavailable, manual attendance remains usable.
 
 ## Environment Variables
 
-### Server (`server/.env`)
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Node.js server port | `5000` |
-| `MONGODB_URI` | MongoDB connection string | `localhost:27017` |
-| `JWT_SECRET` | JWT signing secret | — |
-| `JWT_EXPIRES_IN` | JWT token lifespan | `7d` |
-| `FACE_API_URL` | Python face API base URL | `http://localhost:5001/api` |
-| `HF_TOKEN` | HuggingFace API token for Gradio Space | — |
-| `FRONTEND_URL` | Deployed frontend origin (for CORS) | — |
+| Variable | Purpose |
+|----------|---------|
+| `MONGODB_URI` | MongoDB connection URI and database shared by Express and Python |
+| `JWT_SECRET` | Private account-token signing secret |
+| `JWT_EXPIRES_IN` | Token lifetime; default `7d` |
+| `PORT` | Express port; default `5000` |
+| `FACE_API_URL` | Face-service URL; default `http://localhost:5001/api` |
+| `FRONTEND_URL` | Additional allowed frontend origin |
+| `HF_TOKEN` | Remote HuggingFace authentication when required |
+| `VITE_API_URL` | Frontend API URL; default `http://localhost:5000/api` |
+| `VITE_API_BASE_URL` | Backend origin for photo URLs; default `http://localhost:5000` |
 
-### Client (`client/.env`)
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_API_URL` | Node.js API base URL | `http://localhost:5000/api` |
-| `VITE_API_BASE_URL` | Node.js origin (for photo URLs) | `http://localhost:5000` |
+Set server variables before starting the services and Vite variables before starting or building the frontend. The Python service listens on port `5001`.
 
----
+## Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run setup` | Install Node.js and Python dependencies |
+| `npm run dev` | Start all three development services |
+| `npm run start:client` | Start the frontend |
+| `npm run start:server` | Start Express |
+| `npm run start:python` | Start the face service |
+| `npm run build:client` | Build the frontend |
+| `npm start` | Start the services with frontend preview after building |
+
+## Project Structure
+
+Main application files:
+
+```text
+smart-attendance/
+├── package.json                         # Setup, startup and build commands
+├── package-lock.json
+├── README.md
+├── LICENSE
+└── student-attendance-system/
+    ├── client/
+    │   ├── index.html
+    │   ├── package.json
+    │   ├── vite.config.js
+    │   ├── tailwind.config.js
+    │   ├── public/
+    │   │   └── theme.js                  # Initial theme and preference state
+    │   └── src/
+    │       ├── App.jsx                   # Role-aware routes and layouts
+    │       ├── index.jsx
+    │       ├── index.css                 # Shared styles and theme colours
+    │       ├── components/
+    │       │   ├── Auth/
+    │       │   │   ├── Login.jsx
+    │       │   │   ├── Activate.jsx
+    │       │   │   └── ChangePassword.jsx
+    │       │   ├── Dashboard/
+    │       │   │   └── Dashboard.jsx
+    │       │   ├── Students/
+    │       │   │   ├── StudentList.jsx
+    │       │   │   ├── AddStudent.jsx
+    │       │   │   └── StudentCard.jsx
+    │       │   ├── Attendance/
+    │       │   │   ├── FaceAttendance.jsx
+    │       │   │   ├── PhotoUpload.jsx
+    │       │   │   ├── TakeAttendance.jsx
+    │       │   │   ├── AttendanceList.jsx
+    │       │   │   └── DownloadAttendance.jsx
+    │       │   ├── Academic/
+    │       │   │   └── AcademicPages.jsx
+    │       │   ├── Student/
+    │       │   │   ├── StudentDashboard.jsx
+    │       │   │   └── StudentPortalPages.jsx
+    │       │   ├── Admin/
+    │       │   │   ├── AdminDashboard.jsx
+    │       │   │   ├── AdminPortalPages.jsx
+    │       │   │   └── CreateAccount.jsx
+    │       │   ├── Profile/
+    │       │   │   ├── TeacherProfile.jsx
+    │       │   │   ├── EditProfile.jsx
+    │       │   │   └── PhotoUpload.jsx
+    │       │   ├── Analytics/
+    │       │   │   └── AttendanceAnalytics.jsx
+    │       │   ├── Notifications/
+    │       │   │   └── Notifications.jsx
+    │       │   ├── Corrections/
+    │       │   │   └── Corrections.jsx
+    │       │   ├── Reports/
+    │       │   │   └── SemesterReports.jsx
+    │       │   └── common/               # Navigation, guards, theme and UI controls
+    │       ├── context/                  # Account authentication state
+    │       ├── pages/
+    │       │   └── Attendance.jsx        # Original attendance tabs and session selector
+    │       ├── services/                 # Shared API and feature clients
+    │       └── utils/
+    └── server/
+        ├── package.json
+        ├── scripts/
+        │   └── python-service.cjs        # Python service launcher
+        ├── python/
+        │   ├── api_server.py             # Flask face API
+        │   ├── requirements.txt
+        │   └── models/
+        │       └── hf_model.py           # Remote face-model integration
+        └── src/
+            ├── app.js                   # Express entry point
+            ├── config/
+            │   └── db.js
+            ├── models/
+            │   ├── Account.js
+            │   ├── Teacher.js
+            │   ├── Student.js
+            │   ├── Academic.js          # Terms, classes, courses, offerings and lectures
+            │   ├── Attendance.js        # Legacy attendance
+            │   ├── Correction.js        # Correction requests and audit schema
+            │   └── Notification.js
+            ├── controllers/             # Auth, profiles, academics and attendance handlers
+            ├── middleware/              # Authentication, roles, validation and uploads
+            ├── routes/
+            │   ├── authRoutes.js
+            │   ├── teacherRoutes.js
+            │   ├── teacherAdminRoutes.js
+            │   ├── studentRoutes.js
+            │   ├── studentPortalRoutes.js
+            │   ├── adminRoutes.js
+            │   ├── academicRoutes.js
+            │   ├── attendanceRoutes.js
+            │   ├── analyticsRoutes.js
+            │   ├── notificationRoutes.js
+            │   ├── correctionRoutes.js
+            │   └── semesterReportRoutes.js
+            ├── services/
+            │   ├── academicService.js
+            │   ├── studentPortalService.js
+            │   ├── adminPortalService.js
+            │   ├── attendanceReadService.js
+            │   ├── attendanceCalculation.js
+            │   ├── attendanceAnalyticsService.js
+            │   ├── faceRecognitionService.js
+            │   ├── notificationService.js
+            │   ├── notificationReconciliation.js
+            │   ├── correctionService.js
+            │   ├── correctionQuery.js
+            │   ├── semesterReportService.js
+            │   ├── semesterReportCsv.js
+            │   ├── csvService.js
+            │   └── jwtService.js
+            └── utils/
+```
+
+## API Overview
+
+Protected routes enforce the authenticated Account's role and record access.
+
+| Base path | Function |
+|-----------|----------|
+| `/api/auth` | Login, account activation, current user and password change |
+| `/api/students` | Student profiles, face registration and Student-list CSV |
+| `/api/teacher` | Teacher profile and Student onboarding |
+| `/api/admin` | Accounts, directories, overview and attendance browsing |
+| `/api/academic` | Structures, assignments, enrolments, lectures and session attendance |
+| `/api/student-portal` | Own courses, attendance and profile |
+| `/api/attendance` | Attendance methods, reads and daily/date-range CSV downloads |
+| `/api/analytics` | Role-scoped analytics and term minimum settings |
+| `/api/notifications` | Own notifications, unread counts and read controls |
+| `/api/corrections` | Correction requests, review queues and decisions |
+| `/api/reports` | Semester preview, filter options and CSV export |
 
 ## License
 
-MIT License
+[MIT](LICENSE)
