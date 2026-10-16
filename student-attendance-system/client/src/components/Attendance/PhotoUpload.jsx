@@ -214,7 +214,7 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                                         disabled={loading}
                                         className="rounded-full bg-red-500 p-2 hover:bg-red-600 disabled:opacity-50"
                                     >
-                                        <X className="h-5 w-5 text-white" />
+                                        <X className="h-5 w-5 text-media" />
                                     </button>
                                 </div>
                                 {processingIndex === index && (
@@ -230,7 +230,7 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                     <button
                         onClick={processAllPhotos}
                         disabled={loading || selectedFiles.length === 0 || !sessionId || !!disabledReason}
-                        className="w-full rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 font-semibold text-zinc-950 transition-all hover:from-green-400 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 font-semibold text-ink transition-all hover:from-green-400 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {loading ? (
                             <>

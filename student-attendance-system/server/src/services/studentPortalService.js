@@ -13,19 +13,7 @@ async function profile(req) {
 async function identity(req) { await profile(req); return req.studentProfile._id; }
 const contexts = query => query.populate('courseId','code name state').populate('termId','name startDate endDate state').populate('classGroupId','label section state');
 // This is the single percentage calculation used by the overview, courses and existing /my-summary.
-async function summaries(req) {
-    const mine = await identity(req);
-    const docs = await LectureSession.find({state:'completed',finalised:true,'roster.studentId':mine}).select('offeringId records').lean();
-    const offerings = await contexts(CourseOffering.find({$or:[{'enrolments.studentId':mine},{_id:{$in:docs.map(s=>s.offeringId)}}]}).select('courseId termId classGroupId')).lean();
-    const counts = new Map();
-    for (const s of docs) {
-        const key = String(s.offeringId), count = counts.get(key) || {total:0,present:0}; count.total++;
-        if (s.records.some(r=>String(r.studentId)===String(mine)&&['present','late'].includes(r.status))) count.present++;
-        counts.set(key,count);
-    }
-    return offerings.map(o=>{const count=counts.get(String(o._id))||{total:0,present:0};return {offeringId:o._id,course:o.courseId,term:o.termId,classGroup:o.classGroupId,...count,percentage:count.total?Math.round(count.present/count.total*100):null};})
-        .sort((a,b)=>(a.course?.code||'').localeCompare(b.course?.code||'')||String(a.offeringId).localeCompare(String(b.offeringId)));
-}
+async function summaries(req) { return require('./attendanceAnalyticsService').personalSummaries(req); }
 async function courses(req) {
     const mine = await identity(req), today = A.campusDate(new Date());
     const frozen = await LectureSession.distinct('offeringId',{'roster.studentId':mine,attendanceStarted:true});
@@ -52,7 +40,7 @@ async function sessionView(req,s) {
         offering:offering?{_id:offering._id,course:offering.courseId,term:offering.termId,classGroup:offering.classGroupId}:null,
         teacher:teacher?{name:teacher.name,subject:teacher.subject}:null,
         roster:list.filter(r=>String(r.studentId)===mine).map(r=>({studentId:r.studentId,name:r.name,rollNo:r.rollNo})),
-        records:s.records.filter(r=>String(r.studentId)===mine).map(r=>({studentId:r.studentId,status:r.status,markedAt:r.markedAt,method:r.method}))};
+        records:s.records.filter(r=>String(r.studentId)===mine).map(r=>({studentId:r.studentId,status:r.status,markedAt:r.markedAt,method:r.method,correctedAt:r.correctedAt}))};
 }
 const integer = (value,fallback,max,label) => { if(value===undefined)return fallback; if(typeof value!=='string'||!/^\d+$/.test(value)||Number(value)<1||Number(value)>max)A.fail(400,'Invalid '+label+'.');return Number(value); };
 async function history(req, query={}) {
@@ -74,7 +62,7 @@ async function history(req, query={}) {
     if(status==='cancelled')filter.state='cancelled';
     else if(status){filter.state={$ne:'cancelled'};filter.records=status==='not-marked'?{$not:{$elemMatch:{studentId:mine}}}:{$elemMatch:{studentId:mine,status}};}
     const ownMark={$arrayElemAt:[{$filter:{input:'$records',as:'mark',cond:{$eq:['$$mark.studentId',mine]}}},0]};
-    const pipeline=[{$match:source==='legacy'?{_id:{$exists:false}}:filter},{$project:{_id:1,date:'$scheduledStart',offeringId:1,source:{$literal:'sessions'},record:ownMark}}];
+    const pipeline=[{$match:source==='legacy'?{_id:{$exists:false}}:filter},{$project:{_id:1,date:'$scheduledStart',offeringId:1,source:{$literal:'sessions'},record:ownMark,correctionPendingId:'$correctionSlots.'+String(mine)+'.current._id'}}];
     if(source!=='sessions'&&!offeringId&&!termId){
         const legacyFilter={'records.studentId':mine,...(Object.keys(dates).length?{date:dates}:{})};
         if(['not-marked','cancelled'].includes(status))legacyFilter._id={$exists:false};else if(status)legacyFilter.records={$elemMatch:{studentId:mine,status}};
@@ -85,9 +73,11 @@ async function history(req, query={}) {
     pipeline.push({$sort:{date:-1,_id:-1,source:1}},{$facet:{items:[{$skip:(page-1)*limit},{$limit:limit}],count:[{$count:'total'}]}});
     const [result]=await LectureSession.aggregate(pipeline);const total=result.count[0]?.total||0;
     const items=await Promise.all(result.items.map(async row=>{
-        if(row.source==='legacy')return {id:String(row._id),recordType:'Legacy attendance',date:row.date,subject:row.subject||'',class:row.class||'',section:row.section||'',status:row.record?.status||'not marked',markedAt:row.record?.markedAt,provisional:false};
+        if(row.source==='legacy')return {id:String(row._id),recordType:'Legacy attendance',date:row.date,subject:row.subject||'',class:row.class||'',section:row.section||'',status:row.record?.status||'not marked',markedAt:row.record?.markedAt,provisional:false,correctionUnavailableReason:'Unmapped legacy attendance cannot be corrected. A verified session mapping is required.'};
         const s=await LectureSession.findById(row._id);const v=await sessionView(req,s);return {id:String(s._id),sessionId:String(s._id),recordType:'Session attendance',date:v.scheduledStart,end:v.scheduledEnd,offering:v.offering,teacher:v.teacher,state:v.state,finalised:v.finalised,
-            status:v.state==='cancelled'?'cancelled':v.records[0]?.status||'not marked',markedAt:v.records[0]?.markedAt,provisional:v.state!=='cancelled'&&!v.finalised};
+            status:v.state==='cancelled'?'cancelled':v.records[0]?.status||'not marked',markedAt:v.records[0]?.markedAt,correctedAt:v.records[0]?.correctedAt,provisional:v.state!=='cancelled'&&!v.finalised,
+            correctionPendingId:row.correctionPendingId||null,correctionAvailable:require('./correctionService').eligibility(s,mine).available,
+            correctionUnavailableReason:require('./correctionService').eligibility(s,mine).reason};
     }));
     return {items,pagination:{page,limit,total,pages:Math.ceil(total/limit)},timezone:'Asia/Kolkata'};
 }

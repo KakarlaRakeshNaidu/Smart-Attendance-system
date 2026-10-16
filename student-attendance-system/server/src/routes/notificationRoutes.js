@@ -1,0 +1,12 @@
+const router = require('express').Router();
+const { protect, requireRole, requireTeacherProfile } = require('../middleware/authMiddleware');
+const respondError = require('../utils/respondError');
+const service = require('../services/notificationService');
+router.use(protect, requireRole('student', 'teacher'));
+router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); return req.userRole === 'teacher' ? requireTeacherProfile(req, res, next) : next(); });
+const handle = fn => async (req, res) => { try { res.json({ success: true, ...await fn(req) }); } catch (e) { respondError(res, e); } };
+router.get('/', handle(service.list));
+router.get('/unread-count', handle(service.unread));
+router.patch('/read-all', handle(req => service.read(req, true)));
+router.patch('/:id/read', handle(req => service.read(req)));
+module.exports = router;

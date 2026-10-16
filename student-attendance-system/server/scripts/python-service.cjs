@@ -1,7 +1,7 @@
 const { spawnSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '../../..');
 const service = path.join(root, 'student-attendance-system/server/python');
 const venv = path.join(service, '.venv');
 const interpreter = path.join(venv, process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');

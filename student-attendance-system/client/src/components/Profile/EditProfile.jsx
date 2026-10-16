@@ -98,7 +98,7 @@ const EditProfile = () => {
                                     <User className="h-16 w-16 text-gray-400" />
                                 </div>
                             )}
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full hover:bg-accent shadow-md">
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 bg-primary text-black p-2 rounded-full hover:bg-accent shadow-md">
                                 <Camera className="h-4 w-4" />
                             </button>
                             <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />

@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/authContextState';
 import { Search, User, Menu } from 'lucide-react';
+import { ThemeControl } from './ThemeControl';
 
 const Navbar = ({ onMenuToggle }) => {
     const { user, teacher, isAuthenticated } = useAuth();
@@ -13,7 +14,7 @@ const Navbar = ({ onMenuToggle }) => {
 
     return (
         <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/80 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">
                 {/* Hamburger button — only on mobile/tablet */}
                 <button
                     onClick={onMenuToggle}
@@ -25,7 +26,7 @@ const Navbar = ({ onMenuToggle }) => {
                 </button>
 
                 {/* Search bar */}
-                <div className="relative flex-1 max-w-md">
+                <div className="relative order-last w-full min-w-0 sm:order-none sm:max-w-md sm:flex-1">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                     <input
                         type="text"
@@ -35,6 +36,7 @@ const Navbar = ({ onMenuToggle }) => {
                 </div>
 
                 {/* User avatar */}
+                <div className="ml-auto sm:ml-0"><ThemeControl /></div>
                 <div className="flex flex-shrink-0 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-2">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-800 text-zinc-200">
                         <User className="h-4 w-4" />

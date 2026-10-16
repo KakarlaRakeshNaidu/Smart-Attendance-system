@@ -1,130 +1,73 @@
-﻿import React, { useState } from "react";
-import { useAuth } from "../../context/authContextState";
-import { GraduationCap, Mail, Lock, Eye, EyeOff, Users } from "lucide-react";
-import toast from "react-hot-toast";
+import React, { useRef, useState } from 'react';
+import { useAuth } from '../../context/authContextState';
+import { GraduationCap, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { ThemeControl } from '../common/ThemeControl';
 
 const Login = () => {
-    const [formData, setFormData] = useState({ email: "", password: "" });
+    const [formData, setFormData] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const submitting = useRef(false);
     const { login } = useAuth();
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = async (e) => {
+    const handleChange = e => setFormData(current => ({ ...current, [e.target.name]: e.target.value }));
+    const handleSubmit = async e => {
         e.preventDefault();
+        if (submitting.current) return;
+        submitting.current = true;
         setLoading(true);
+        setError('');
+        // Native form values also preserve password-manager/autofill submissions.
+        const values = new FormData(e.currentTarget);
         try {
-            const res = await login(formData.email, formData.password);
-            if (!res.success) toast.error(res.message || "Login failed");
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Login failed");
+            const response = await login(values.get('email'), values.get('password'));
+            if (!response.success) setError(response.message || 'Sign in failed. Please try again.');
+        } catch (failure) {
+            setError(failure.response?.data?.message || 'Unable to sign in. Check your connection and try again.');
         } finally {
+            submitting.current = false;
             setLoading(false);
         }
     };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-950 py-12 px-4">
-            <div className="max-w-md w-full">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
-                    {/* Logo */}
-                    <div className="text-center mb-8">
-                        <div className="flex justify-center mb-4">
-                            <div className="p-3 bg-zinc-800 rounded-2xl border border-zinc-700">
-                                <GraduationCap className="h-10 w-10 text-zinc-100" />
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-bold text-white">Welcome back</h1>
-                        <p className="text-zinc-400 mt-2 text-sm">
-                            Sign in with your Student, Teacher or Administrator account.
-                        </p>
-                    </div>
-
-                    {/* Role hint pills */}
-                    <div className="flex justify-center gap-2 mb-6">
-                        {[
-                            { label: "Student", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-                            { label: "Teacher", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-                            { label: "Admin",   color: "bg-purple-500/10 text-purple-400 border-purple-500/20" }
-                        ].map(({ label, color }) => (
-                            <span key={label} className={`px-2.5 py-1 rounded-full text-xs font-medium border ${color}`}>
-                                {label}
-                            </span>
-                        ))}
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                Email address
-                            </label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
-                                <input
-                                    id="login-email"
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                    className="input-field pl-10"
-                                    placeholder="you@example.com"
-                                    autoComplete="email"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                                <input
-                                    id="login-password"
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                    className="input-field pl-10 pr-10"
-                                    placeholder="Your password"
-                                    autoComplete="current-password"
-                                />
-                                <button
-                                    type="button"
-                                    id="login-toggle-pw"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                                >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </button>
-                            </div>
-                        </div>
-
-                        <button
-                            id="login-submit"
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary w-full py-3 mt-2 flex items-center justify-center"
-                        >
-                            {loading
-                                ? <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                : "Sign in"
-                            }
-                        </button>
-                    </form>
-
-                    <p className="mt-6 text-center text-xs text-zinc-500">
-                        No account? Contact your administrator to create one.
-                    </p>
+    return <div className="login-page bg-zinc-950">
+        <div className="login-container">
+            <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-sm font-semibold text-zinc-100">
+                    <GraduationCap className="login-brand-icon h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+                    <span>Smart Attendance System</span>
                 </div>
+                <ThemeControl />
             </div>
+            <section className="card p-6 sm:p-8" aria-labelledby="sign-in-title">
+                <h1 id="sign-in-title" className="text-2xl font-semibold text-zinc-100">Sign in</h1>
+                <p className="mt-2 mb-6 text-sm text-zinc-400">Welcome back. Enter your account details.</p>
+                <form onSubmit={handleSubmit} className="space-y-4" aria-describedby={error ? 'login-error' : undefined} aria-busy={loading}>
+                    <div>
+                        <label htmlFor="login-email" className="mb-2 block text-sm font-medium text-zinc-300">Email address</label>
+                        <div className="relative">
+                            <Mail className="login-icon" aria-hidden="true" />
+                            <input id="login-email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required value={formData.email} onChange={handleChange} className="input-field login-input pl-11" placeholder="you@example.com" aria-describedby={error ? 'login-error' : undefined} />
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="login-password" className="mb-2 block text-sm font-medium text-zinc-300">Password</label>
+                        <div className="relative">
+                            <Lock className="login-icon" aria-hidden="true" />
+                            <input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={formData.password} onChange={handleChange} className="input-field login-input pl-11 pr-12" placeholder="Your password" aria-describedby={error ? 'login-error' : undefined} />
+                            <button id="login-toggle-pw" type="button" className="login-visibility" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="login-password" onClick={() => setShowPassword(value => !value)}>
+                                {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                            </button>
+                        </div>
+                    </div>
+                    {error && <p id="login-error" role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>}
+                    <button id="login-submit" type="submit" disabled={loading} className="btn-primary flex min-h-12 w-full items-center justify-center gap-2">
+                        {loading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />}
+                        {loading ? 'Signing in…' : 'Sign in'}
+                    </button>
+                </form>
+                <p className="mt-5 text-center text-xs leading-relaxed text-zinc-400">Contact your institution for account access.</p>
+            </section>
         </div>
-    );
+    </div>;
 };
-
 export default Login;

@@ -22,7 +22,8 @@ exports.structures = wrap(async (req,res) => {
         const start = b.startDate ?? doc.startDate, end = b.endDate ?? doc.endDate; A.range(start,end);
         if (!doc.isNew && (start !== doc.startDate || end !== doc.endDate) && await CourseOffering.exists({ termId: doc._id })) A.fail(409, 'Term dates are referenced. Preserve them and create a new term.');
         const minimum = b.minimumAttendancePercent === undefined ? (doc.minimumAttendancePercent ?? 75) : Number(b.minimumAttendancePercent);
-        if (!Number.isFinite(minimum) || minimum < 0 || minimum > 100) A.fail(400,'Attendance minimum must be between 0 and 100.');
+        if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 100) A.fail(400,'Attendance minimum must be greater than 0 and at most 100.');
+        if (doc.isNew || minimum !== doc.minimumAttendancePercent) doc.set({minimumAttendanceUpdatedAt:new Date(),minimumAttendanceUpdatedBy:req.accountId});
         doc.set({ minimumAttendancePercent:minimum, name: A.text(b.name ?? doc.name,'Term name'), startDate: start, endDate: end, state });
     } else if (req.params.kind === 'classes') {
         doc.set({ label: A.text(b.label ?? doc.label,'Class label'), section: typeof (b.section ?? doc.section) === 'string' ? (b.section ?? doc.section).trim() : A.fail(400,'Section must be text.'), state });

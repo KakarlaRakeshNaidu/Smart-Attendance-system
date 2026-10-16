@@ -172,7 +172,7 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
 
                 {loading && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <div className="text-center text-white">
+                        <div className="text-center text-media">
                             <Scan className="h-12 w-12 mx-auto mb-2 animate-pulse" />
                             <p>Scanning faces...</p>
                         </div>

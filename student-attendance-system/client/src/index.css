@@ -2,106 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Reset */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@layer base {
+  /* Purpose-based tokens. Existing neutral utilities use these aliases so every
+     established screen keeps its layout while sharing the same theme. */
+  :root {
+    color-scheme: light;
+    --page: 251 245 239;
+    --surface: 255 253 250;
+    --raised: 242 228 219;
+    --hover: 237 212 196;
+    --border: 228 205 191;
+    --border-strong: 186 156 139;
+    --text: 58 32 39;
+    --secondary: 100 68 75;
+    --muted: 121 95 98;
+    --subtle: 130 105 106;
+    --action: 124 38 62;
+    --on-action: 255 250 244;
+    --focus: 195 94 32;
+    --success: 4 120 87;
+    --success-surface: 209 250 229;
+    --error-surface: 254 226 226;
+    --warning: 146 64 14;
+    --error: 185 28 28;
+    --info: 159 75 36;
+    --purple: 124 38 62;
+    --chart: #b64c1e;
+  }
+  :root[data-theme='light'] {
+    --role-accent-tint: 124 38 62;
+    --info-tint: 201 105 40;
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --page: 9 9 11;
+    --surface: 24 24 27;
+    --raised: 39 39 42;
+    --hover: 63 63 70;
+    --border: 39 39 42;
+    --border-strong: 82 82 91;
+    --text: 244 244 245;
+    --secondary: 212 212 216;
+    --muted: 161 161 170;
+    --subtle: 143 143 154;
+    --action: 165 180 252;
+    --on-action: 24 24 27;
+    --focus: 165 180 252;
+    --success: 110 231 183;
+    --success-surface: 2 44 34;
+    --error-surface: 69 10 10;
+    --warning: 252 211 77;
+    --error: 252 165 165;
+    --info: 147 197 253;
+    --purple: 216 180 254;
+    --chart: #a5b4fc;
+  }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: rgb(var(--page));
+    color: rgb(var(--text));
+    min-height: 100vh;
+  }
+  :focus-visible { outline: 2px solid rgb(var(--focus)); outline-offset: 3px; }
+  input, select, textarea { accent-color: rgb(var(--action)); }
+  input::placeholder, textarea::placeholder { color: rgb(var(--subtle)); opacity: 1; }
+  input:autofill, input:-webkit-autofill {
+    -webkit-text-fill-color: rgb(var(--text));
+    --tw-shadow: 0 0 0 1000px rgb(var(--surface)) inset;
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+    caret-color: rgb(var(--text));
+  }
+  button:disabled { cursor: not-allowed; opacity: .6; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: rgb(var(--surface)); }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--border-strong)); border-radius: 6px; }
 }
 
-/* Body */
-body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #0a0a0a;
-  min-height: 100vh;
-  color: #f4f4f5;
+@layer components {
+  .btn-primary {
+    @apply bg-primary font-medium py-2.5 px-4 rounded-2xl transition-colors duration-200 hover:brightness-95;
+    color: rgb(var(--on-action));
+  }
+  .btn-secondary {
+    @apply bg-zinc-800 border border-zinc-700 text-zinc-100 font-medium py-2.5 px-4 rounded-2xl transition-colors duration-200 hover:bg-zinc-700;
+  }
+  .btn-success {
+    @apply bg-emerald-700 font-medium py-2.5 px-4 rounded-2xl transition-colors duration-200 hover:brightness-95;
+    color: white;
+  }
+  .btn-danger {
+    @apply bg-red-600 font-medium py-2.5 px-4 rounded-2xl transition-colors duration-200 hover:brightness-95;
+    color: white;
+  }
+  /* In the components layer, utilities such as pl-10 can reserve icon space. */
+  .input-field {
+    @apply w-full px-4 py-2 border border-zinc-700 bg-zinc-900 text-zinc-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-focus focus:border-transparent transition-colors duration-200;
+    min-width: 0;
+  }
+  .card { @apply bg-zinc-900 border border-zinc-800 shadow-sm rounded-2xl p-6; }
+  .text-title { @apply text-2xl font-semibold text-zinc-100; }
+  .text-section { @apply text-lg font-medium text-zinc-100; }
+  .text-subtext { @apply text-sm text-zinc-400; }
+  .theme-control {
+    @apply inline-flex shrink-0 items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300;
+  }
+  .theme-control select { background: transparent; color: inherit; max-width: 6rem; cursor: pointer; }
+  .theme-control option { background: rgb(var(--surface)); color: rgb(var(--text)); }
+  .login-page { min-height: 100vh; min-height: 100dvh; display: flex; padding: 24px 16px; }
+  .login-container { width: 100%; max-width: 432px; margin: auto; }
+  .login-input { min-height: 48px; }
+  .login-icon { @apply pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500; }
+  :root[data-theme='light'] .login-brand-icon { color: rgb(var(--focus)); }
+  .login-visibility { @apply absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100; }
 }
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #18181b;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
-}
-
-/* Button styles */
-
-.btn-primary {
-  @apply bg-white text-black font-medium py-2.5 px-4 
-         rounded-2xl transition-all duration-200 
-         hover:scale-[1.01] active:scale-100;
-}
-
-.btn-secondary {
-  @apply bg-zinc-800 border border-zinc-700 
-         text-zinc-100 font-medium py-2.5 px-4 
-         rounded-2xl transition-all duration-200 
-         hover:bg-zinc-700;
-}
-
-.btn-success {
-  @apply bg-emerald-500 text-black 
-         font-medium py-2.5 px-4 rounded-2xl 
-         transition-all duration-200 hover:brightness-95;
-}
-
-.btn-danger {
-  @apply bg-red-500 text-white 
-         font-medium py-2.5 px-4 rounded-2xl 
-         transition-all duration-200 hover:brightness-95;
-}
-
-/* Input styles */
-
-.input-field {
-  @apply w-full px-4 py-2 
-         border border-zinc-800 bg-zinc-900 text-zinc-100 
-         rounded-2xl 
-         focus:outline-none 
-         focus:ring-2 focus:ring-zinc-600 
-         focus:border-transparent 
-         transition duration-200;
-}
-
-/* Card styles */
-
-.card {
-  @apply bg-zinc-900 border border-zinc-800 
-         shadow-sm rounded-2xl p-6;
-}
-
-/* Animation */
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Typography helpers */
-
-.text-title {
-  @apply text-2xl font-semibold text-white;
-}
-
-.text-section {
-  @apply text-lg font-medium text-zinc-100;
-}
-
-.text-subtext {
-  @apply text-sm text-zinc-400;
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fadeIn { animation: fadeIn .3s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadeIn, .animate-pulse, .animate-spin { animation: none; }
+  *, *::before, *::after { scroll-behavior: auto; transition-duration: 0s; }
 }

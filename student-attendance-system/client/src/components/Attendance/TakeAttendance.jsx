@@ -129,11 +129,11 @@ const TakeAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                             <select aria-label={'Status '+student.studentId} className="input-field max-w-36" value={attendance[student._id] || ''} disabled={submitting || !!disabledReason} onClick={e=>e.stopPropagation()} onChange={e=>setAttendance(prev=>({...prev,[student._id]:e.target.value}))}>
                                 <option value="">Not marked</option><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option>
                             </select>
-                            <div className={`rounded-xl p-2 ${attendance[student._id] === 'present' ? 'bg-emerald-500' : attendance[student._id] === 'absent' ? 'bg-red-500' : 'bg-zinc-700'}`}>
+                            <div className={`rounded-xl p-2 ${attendance[student._id] === 'present' ? 'bg-emerald-600' : attendance[student._id] === 'absent' ? 'bg-red-500' : 'bg-zinc-700'}`}>
                                 {attendance[student._id] === 'present' ? (
-                                    <Check className="h-5 w-5 text-white" />
+                                    <Check className="h-5 w-5 text-media" />
                                 ) : (
-                                    attendance[student._id] === 'absent' ? <X className="h-5 w-5 text-white" /> : <span className="text-white">{attendance[student._id] === 'late' ? 'Late' : '—'}</span>
+                                    attendance[student._id] === 'absent' ? <X className="h-5 w-5 text-media" /> : <span className="text-zinc-100">{attendance[student._id] === 'late' ? 'Late' : '—'}</span>
                                 )}
                             </div>
                         </div>

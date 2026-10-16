@@ -245,7 +245,7 @@ const AddStudent = () => {
                                         className="w-full h-48 object-cover"
                                     />
                                     <div className="absolute top-2 right-2">
-                                        <span className="bg-emerald-600 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
+                                    <span className="bg-emerald-700 text-media px-2 py-1 rounded-lg text-xs flex items-center gap-1">
                                             <Check className="h-3 w-3" />
                                             Face Captured
                                         </span>

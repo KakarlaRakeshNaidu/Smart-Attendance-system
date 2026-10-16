@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "test:analytics": "node --test verification/*.test.js",
+    "test:notifications": "node --test verification/notifications.test.js",
+    "test:corrections": "node --test verification/corrections.test.js",
+    "test:reports": "node --test verification/semesterReports.test.js",
+    "notifications:reconcile": "node scripts/reconcile-notifications.js"
   },
   "dependencies": {
     "axios": "^1.13.5",

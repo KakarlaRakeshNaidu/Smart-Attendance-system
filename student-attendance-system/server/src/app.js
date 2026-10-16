@@ -49,6 +49,10 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/teacher', teacherAdminRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/corrections', require('./routes/correctionRoutes'));
+app.use('/api/reports', require('./routes/semesterReportRoutes'));
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -68,6 +72,9 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 async function start() {
     await connectDB();
+    const { Notification, NotificationWork } = require('./models/Notification');
+    await Promise.all([Notification.init(), NotificationWork.init()]);
+    const stopNotifications = require('./services/notificationReconciliation').startWorker();
     const server = app.listen(PORT, () => {
         console.log(`Server is running on port ${server.address().port}`);
         console.log(`API available at http://localhost:${PORT}/api`);
@@ -87,9 +94,11 @@ async function start() {
     });
 
     // Graceful shutdown on CTRL+C / nodemon restart
-    const shutdown = (signal) => {
+    const shutdown = async (signal) => {
         console.log(`\n[${signal}] Shutting down gracefully...`);
-        server.close(() => {
+        const stopping = stopNotifications();
+        server.close(async () => {
+            await stopping;
             console.log('Server closed.');
             process.exit(0);
         });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/authContextState';
+import { NotificationLink } from '../Notifications/notificationState';
 import {
     LayoutDashboard, Users, ClipboardCheck, User,
     Settings, LogOut, GraduationCap, X, ShieldCheck
@@ -19,7 +20,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/attendance', label: 'Attendance', icon: ClipboardCheck },
         { to: '/academic', label: 'My courses/classes', icon: ClipboardCheck },
         { to: '/legacy-attendance', label: 'Legacy attendance', icon: ClipboardCheck },
-        { to: '/profile',    label: 'Profile',    icon: User }
+        { to: '/profile',    label: 'Profile',    icon: User },
+        { to: '/attendance-analytics', label: 'Attendance Analytics', icon: ClipboardCheck },
+        { to: '/attendance-corrections', label: 'Attendance corrections', icon: ClipboardCheck },
+        { to: '/semester-reports', label: 'Semester Reports', icon: ClipboardCheck }
     ];
 
     const adminLinks = [
@@ -68,7 +72,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         </button>
                     </div>
 
-                    <nav className="space-y-2">
+                    <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto">
                         {links.map((link) => {
                             const Icon = link.icon;
                             const active = isActive(link.to);
@@ -84,6 +88,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                                 </Link>
                             );
                         })}
+                        {role === 'teacher' && <NotificationLink onClick={handleLinkClick} className="flex items-center gap-3 rounded-2xl border border-zinc-800 px-4 py-3 text-sm text-zinc-300" />}
                     </nav>
 
                     <div className="mt-auto space-y-2 border-t border-zinc-800 pt-4">

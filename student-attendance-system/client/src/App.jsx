@@ -20,8 +20,14 @@ import EditProfile from './components/Profile/EditProfile';
 import StudentDashboard from './components/Student/StudentDashboard';
 import { MyCourses, MyCourse, MySession, MyAttendance, MyProfile } from './components/Student/StudentPortalPages';
 import AdminDashboard from './components/Admin/AdminDashboard';
+import AttendanceAnalytics from './components/Analytics/AttendanceAnalytics';
+import Notifications from './components/Notifications/Notifications';
+import { NotificationProvider } from './components/Notifications/notificationState';
+import { CorrectionQueue, CorrectionSession, CorrectionDetail } from './components/Corrections/Corrections';
+import SemesterReports from './components/Reports/SemesterReports';
 import { AdminDirectory, AdminProfileDetail, AdminAccountDetail, AdminAttendance } from './components/Admin/AdminPortalPages';
 import { useAuth } from './context/authContextState';
+import { ThemeControl } from './components/common/ThemeControl';
 
 // Role-based root redirect
 const RootRedirect = () => {
@@ -45,7 +51,8 @@ const App = () => {
     const showShell = isAuthenticated && !isAuthPage && !isStandalonePage;
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-100">
+        <NotificationProvider><div className="min-h-screen bg-zinc-950 text-zinc-100">
+            {!showShell && location.pathname !== '/login' && <div className="flex justify-end px-4 pt-3"><ThemeControl /></div>}
             {showShell && (
                 <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
             )}
@@ -56,6 +63,11 @@ const App = () => {
                 <main className={isAuthPage ? 'min-h-screen' : showShell ? 'px-6 py-6' : ''}>
                     <ErrorBoundary key={location.pathname}>
                     <Routes>
+                        <Route path="/semester-reports" element={<PrivateRoute><SemesterReports /></PrivateRoute>} />
+                        <Route path="/attendance-corrections" element={<PrivateRoute><CorrectionQueue /></PrivateRoute>} />
+                        <Route path="/attendance-corrections/sessions/:sessionId" element={<PrivateRoute roles={['student']}><CorrectionSession /></PrivateRoute>} />
+                        <Route path="/attendance-corrections/sessions/:sessionId/requests/:requestId" element={<PrivateRoute><CorrectionDetail /></PrivateRoute>} />
+                        <Route path="/notifications" element={<PrivateRoute roles={['student', 'teacher']}><Notifications /></PrivateRoute>} />
                         {/* Public */}
                         <Route path="/login"    element={<Login />} />
                         <Route path="/register" element={<Register />} />
@@ -108,6 +120,7 @@ const App = () => {
                             </PrivateRoute>
                         } />
 
+                        <Route path="/attendance-analytics" element={<PrivateRoute roles={['student','teacher','admin']}><AttendanceAnalytics /></PrivateRoute>} />
                         <Route path="/my-attendance/history" element={<PrivateRoute roles={['student']}><MyAttendance /></PrivateRoute>} />
                         <Route path="/my-profile" element={<PrivateRoute roles={['student']}><MyProfile /></PrivateRoute>} />
 
@@ -135,7 +148,7 @@ const App = () => {
                     </ErrorBoundary>
                 </main>
             </div>
-        </div>
+        </div></NotificationProvider>
     );
 };
 

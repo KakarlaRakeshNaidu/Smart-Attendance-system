@@ -4,9 +4,9 @@
   "description": "Complete Smart Attendance System with Face Recognition",
   "scripts": {
     "install:all": "npm install && cd student-attendance-system/server && npm install && cd ../client && npm install",
-    "install:python": "node scripts/python-service.cjs setup",
+    "install:python": "node student-attendance-system/server/scripts/python-service.cjs setup",
     "setup": "npm run install:all && npm run install:python",
-    "start:python": "node scripts/python-service.cjs",
+    "start:python": "node student-attendance-system/server/scripts/python-service.cjs",
     "start:server": "cd student-attendance-system/server && npm run dev",
     "start:client": "cd student-attendance-system/client && npm run dev",
     "dev": "concurrently --kill-others-on-fail -n \"PYTHON,SERVER,CLIENT\" -c \"yellow,blue,green\" \"npm run start:python\" \"npm run start:server\" \"npm run start:client\"",

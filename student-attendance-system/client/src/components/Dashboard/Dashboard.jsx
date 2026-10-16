@@ -180,18 +180,18 @@ const Dashboard = () => {
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#fafafa" stopOpacity={0.45} />
-                                            <stop offset="95%" stopColor="#fafafa" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="var(--chart)" stopOpacity={0.45} />
+                                    <stop offset="95%" stopColor="var(--chart)" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                                    <XAxis dataKey="day" stroke="#71717a" />
-                                    <YAxis stroke="#71717a" allowDecimals={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--border))" />
+                            <XAxis dataKey="day" stroke="rgb(var(--muted))" />
+                            <YAxis stroke="rgb(var(--muted))" allowDecimals={false} />
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', color: '#fafafa', borderRadius: '14px' }}
-                                        labelStyle={{ color: '#fafafa' }}
+                                contentStyle={{ backgroundColor: 'rgb(var(--surface))', borderColor: 'rgb(var(--border-strong))', color: 'rgb(var(--text))', borderRadius: '14px' }}
+                                labelStyle={{ color: 'rgb(var(--text))' }}
                                     />
-                                    <Area type="monotone" dataKey="present" stroke="#fafafa" strokeWidth={2} fill="url(#attendanceGradient)" />
+                            <Area type="monotone" dataKey="present" stroke="var(--chart)" strokeWidth={2} fill="url(#attendanceGradient)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>

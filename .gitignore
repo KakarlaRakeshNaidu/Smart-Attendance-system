@@ -80,6 +80,7 @@ coverage/
 *.orig
 .cache/
 /graphify-out/
+/Microsoft.PowerShell.Core/
 /IS.md
 
 # Local code-analysis and assistant artifacts
@@ -87,11 +88,18 @@ coverage/
 /.graphify/
 /.github/copilot-instructions.md
 
+# Root-local helper folder. The required Python launcher lives in server/scripts.
+/scripts/
+
 # Disposable test outputs and local test helpers
 /student-attendance-system/server/scripts/serve-fixtures.js
 test-results/
 playwright-report/
 .vitest/
+
+# Vite development caches and generated configuration bundles
+.vite/
+.vite-temp/
 
 # Local task reports (README and setup documentation remain tracked)
 /VERIFICATION.md
@@ -117,16 +125,5 @@ coverage.xml
 .nox/
 .hypothesis/
 
-# Source tests stay local at the project owner's request
-# These match test folders/files, not feature source or migration/startup scripts.
-test/
-tests/
-__tests__/
-*.test.js
-*.test.jsx
-*.test.ts
-*.test.tsx
-*.spec.js
-*.spec.jsx
-*.spec.ts
-*.spec.tsx
+# Preserve meaningful source regression tests. Generated reports, caches and
+# disposable *.local.* helpers are ignored above, rather than all test folders.

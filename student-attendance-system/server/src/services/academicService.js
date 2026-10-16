@@ -52,13 +52,14 @@ async function canMark(req, session) {
     return doc;
 }
 // MongoDB updates to one document are atomic. Compare revision and retry so concurrent marking/finalising never loses a write.
-async function changeSession(value, mutate) {
+async function changeSession(value, mutate, projection = '') {
     for (let attempt = 0; attempt < 12; attempt++) {
-        const session = await LectureSession.findById(id(value));
+        const session = await LectureSession.findById(id(value)).select(projection);
         if (!session) fail(404, 'Lecture session not found.');
         const fields = await mutate(session);
+        if (fields === null) return session; // Idempotent correction retry; no revision or notification churn.
         const result = await LectureSession.findOneAndUpdate({ _id: session._id, revision: session.revision },
-            { $set: { ...fields, updatedAt: new Date() }, $inc: { revision: 1 } }, { new: true, runValidators: true });
+            { $set: { ...fields, updatedAt: new Date() }, $inc: { revision: 1 } }, { new: true, runValidators: true }).select(projection);
         if (result) return result;
     }
     fail(409, 'Session changed concurrently. Refresh and retry.');

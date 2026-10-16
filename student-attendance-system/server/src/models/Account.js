@@ -100,4 +100,5 @@ accountSchema.methods.toPublicJSON = function () {
     };
 };
 
+accountSchema.plugin(require('./notificationSource'));
 module.exports = mongoose.model('Account', accountSchema);

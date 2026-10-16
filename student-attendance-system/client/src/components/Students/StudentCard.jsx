@@ -161,8 +161,8 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                             )}
                         </div>
                         {hasFaceRegistered && (
-                            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500">
-                                <Scan className="h-2.5 w-2.5 text-white" />
+                                <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600">
+                                <Scan className="h-2.5 w-2.5 text-media" />
                             </div>
                         )}
                     </div>
