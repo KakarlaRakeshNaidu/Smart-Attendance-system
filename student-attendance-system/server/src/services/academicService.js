@@ -47,6 +47,7 @@ async function canRead(req, session) {
 async function canMark(req, session) {
     if (req.userRole !== 'teacher' || !req.teacherId || String(session.teacherId) !== String(req.teacherId)) fail(403, 'Only the teaching Teacher may mark this session.');
     if (session.finalised || session.state !== 'scheduled') fail(409, 'Cancelled, completed or finalised sessions cannot be changed.');
+    if (session.batchKey && session.batch?.branch) await require('./administrationService').access(req, session.batch);
     const doc = await activeOffering(session.offeringId);
     if (!assigned(doc, req.teacherId, session.campusDate) || !assigned(doc, req.teacherId, campusDate(new Date()))) fail(403, 'Your effective teaching assignment has ended or does not cover this lecture.');
     return doc;

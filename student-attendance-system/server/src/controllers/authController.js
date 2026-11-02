@@ -14,6 +14,7 @@ const { generateToken } = require('../services/jwtService');
  */
 const buildUserResponse = async (account) => {
     const base = {
+        profilePhoto: account.profilePhoto || '',
         id: account._id,
         name: account.name,
         email: account.email,

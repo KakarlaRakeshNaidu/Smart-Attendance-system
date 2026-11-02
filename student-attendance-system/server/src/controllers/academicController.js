@@ -251,3 +251,5 @@ exports.mapLegacy = wrap(async (req,res) => {
         throw e;
     }
 });
+
+exports.markSession = markSession;

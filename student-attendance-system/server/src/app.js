@@ -42,6 +42,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', require('./routes/directoryRoutes'));
+app.use('/api/teacher', require('./routes/teacherDirectoryRoutes'));
+app.use('/api/batch-attendance', require('./routes/batchAttendanceRoutes'));
+app.use('/api/student', require('./routes/portalRoutes'));
 app.use('/api/academic', require('./routes/academicRoutes'));
 app.use('/api/students', studentRoutes);
 app.use('/api/student-portal', require('./routes/studentPortalRoutes'));
@@ -74,6 +78,7 @@ async function start() {
     await connectDB();
     const { Notification, NotificationWork } = require('./models/Notification');
     await Promise.all([Notification.init(), NotificationWork.init()]);
+    await Promise.all([require('./models/Administration').TeacherAcademicAccess.init(), require('./models/Administration').AuditLog.init(), ...Object.values(require('./models/Academic')).map(model => model.init())]);
     const stopNotifications = require('./services/notificationReconciliation').startWorker();
     const server = app.listen(PORT, () => {
         console.log(`Server is running on port ${server.address().port}`);

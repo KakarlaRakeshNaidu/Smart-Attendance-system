@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 const accountSchema = new mongoose.Schema(
     {
+        profilePhoto: { type: String, default: '' },
         name: {
             type: String,
             required: [true, 'Name is required'],

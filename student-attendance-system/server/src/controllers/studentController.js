@@ -10,11 +10,13 @@ const path = require('path');
 // @access  Private
 exports.getAllStudents = async (req, res) => {
     try {
-        const profiles = await Student.find().select('-faceEmbedding').sort({ createdAt: -1 });
+        const scope = await require('../services/administrationService').studentFilter(req);
+        const filter = { $and: [scope, { status: { $nin: ['archived', 'inactive'] } }] };
+        const profiles = await Student.find(filter).select('-faceEmbedding').sort({ createdAt: -1 });
         // Return registration status without exposing biometric vectors.
-        const registered = await Student.find({'faceEmbedding.0':{$exists:true}}).select('_id').lean();
+        const registered = await Student.find({ $and: [filter, {'faceEmbedding.0':{$exists:true}}] }).select('_id').lean();
         const registeredIds = new Set(registered.map(s=>String(s._id)));
-        const students = profiles.map(s=>({...s.toJSON(),faceRegistered:registeredIds.has(String(s._id))}));
+        const students = profiles.map(s=>({...s.toJSON(),id:s.id,faceRegistered:registeredIds.has(String(s._id))}));
 
         res.status(200).json({
             success: true,
@@ -334,11 +336,13 @@ exports.updateProfilePhoto = async (req, res) => {
 // @access  Private
 exports.downloadStudentsCSV = async (req, res) => {
     try {
-        const profiles = await Student.find().select('-faceEmbedding').sort({ createdAt: -1 });
+        const scope = await require('../services/administrationService').studentFilter(req);
+        const filter = { $and: [scope, { status: { $nin: ['archived', 'inactive'] } }] };
+        const profiles = await Student.find(filter).select('-faceEmbedding').sort({ createdAt: -1 });
         // Return registration status without exposing biometric vectors.
-        const registered = await Student.find({'faceEmbedding.0':{$exists:true}}).select('_id').lean();
+        const registered = await Student.find({ $and: [filter, {'faceEmbedding.0':{$exists:true}}] }).select('_id').lean();
         const registeredIds = new Set(registered.map(s=>String(s._id)));
-        const students = profiles.map(s=>({...s.toJSON(),faceRegistered:registeredIds.has(String(s._id))}));
+        const students = profiles.map(s=>({...s.toJSON(),id:s.id,faceRegistered:registeredIds.has(String(s._id))}));
         const csvData = generateStudentListCSV(students);
 
         res.setHeader('Content-Type', 'text/csv');

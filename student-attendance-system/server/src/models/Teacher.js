@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const teacherSchema = new mongoose.Schema({
+    accountWasActive: { type: Boolean, select: false },
+    status: { type: String, enum: ['active', 'inactive', 'archived'], default: 'active' },
     name: {
         type: String,
         required: [true, 'Name is required'],

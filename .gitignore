@@ -127,3 +127,14 @@ coverage.xml
 
 # Preserve meaningful source regression tests. Generated reports, caches and
 # disposable *.local.* helpers are ignored above, rather than all test folders.
+
+# Private development and verification files
+.local-work/
+.codex/
+.chatgpt/
+AGENTS.md
+**/tests/
+**/verification/
+**/*.test.*
+**/*.spec.*
+**/*Zone.Identifier*
