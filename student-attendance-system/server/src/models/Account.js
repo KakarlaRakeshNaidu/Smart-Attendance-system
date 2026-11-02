@@ -4,6 +4,8 @@ const crypto = require('crypto');
 
 const accountSchema = new mongoose.Schema(
     {
+        subject: { type: String, default: '' },
+        description: { type: String, default: '' },
         profilePhoto: { type: String, default: '' },
         name: {
             type: String,

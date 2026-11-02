@@ -12,42 +12,47 @@ const studentService = {
     },
 
     addStudent: async (studentData) => {
-        // If we have both profilePhoto file AND faceImage, use FormData
-        // If we only have faceImage (base64), use JSON
-        // If we only have profilePhoto file, use FormData
-        
         const hasProfilePhotoFile = studentData.profilePhoto && studentData.profilePhoto instanceof File;
         const hasFaceImage = !!studentData.faceImage;
-        
-        if (hasProfilePhotoFile && !hasFaceImage) {
-            // Use FormData for file upload only
+
+        if (hasProfilePhotoFile || (hasProfilePhotoFile && hasFaceImage)) {
+            // Use FormData for file upload
             const formData = new FormData();
             if (studentData.studentId) formData.append('studentId', studentData.studentId);
             if (studentData.name) formData.append('name', studentData.name);
             if (studentData.email) formData.append('email', studentData.email);
-            if (studentData.class) formData.append('class', studentData.class);
+            if (studentData.password) formData.append('password', studentData.password);
+            if (studentData.academicYear) formData.append('academicYear', studentData.academicYear);
+            if (studentData.branch) formData.append('branch', studentData.branch);
             if (studentData.section) formData.append('section', studentData.section);
-            formData.append('profilePhoto', studentData.profilePhoto);
-            
+            if (studentData.subsection) formData.append('subsection', studentData.subsection);
+            if (studentData.class) formData.append('class', studentData.class);
+            if (studentData.profilePhoto) formData.append('profilePhoto', studentData.profilePhoto);
+            if (studentData.faceImage) formData.append('faceImage', studentData.faceImage);
+
             const response = await api.post('/students', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             return response.data;
         }
-        
-        // Use JSON for faceImage (base64 is too large for FormData text fields)
+
+        // Use JSON
         const jsonData = {
             studentId: studentData.studentId,
             name: studentData.name,
             email: studentData.email || '',
-            class: studentData.class || '',
-            section: studentData.section || ''
+            password: studentData.password || '',
+            academicYear: Number(studentData.academicYear) || 1,
+            branch: studentData.branch || 'CSE',
+            section: studentData.section || 'A',
+            subsection: studentData.subsection || 'A1',
+            class: studentData.class || ''
         };
-        
+
         if (hasFaceImage) {
             jsonData.faceImage = studentData.faceImage;
         }
-        
+
         const response = await api.post('/students', jsonData, {
             headers: { 'Content-Type': 'application/json' }
         });

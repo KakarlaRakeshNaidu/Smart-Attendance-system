@@ -1,18 +1,150 @@
-import React,{useState} from 'react';
-import {Link} from 'react-router-dom';
-import {ShieldCheck,Plus,RefreshCw,LogOut} from 'lucide-react';
-import {useAuth} from '../../context/authContextState';
-import CreateAccount from './CreateAccount';
-import {AccountTable,useAdminData,State} from './AdminPortalPages';
-const AdminDashboard=()=>{
- const {user,logout}=useAuth(),[showCreate,setShowCreate]=useState(false),[refresh,setRefresh]=useState(0),overview=useAdminData('/admin/overview');
- const reload=()=>{setRefresh(v=>v+1);overview.retry();},c=overview.data?.counts,a=overview.data?.attention;
- const cards=c?[['Teachers',c.teachers,'All Teacher profiles, with or without a login account.','/admin/teachers'],['Students',c.students,'All Student profiles, including profiles without login accounts.','/admin/students'],['Administrators',c.administrators,'All Administrator accounts, active or inactive.','/admin?role=admin'],['Active Student accounts',c.activeStudentAccounts,'Student login accounts currently active.','/admin?role=student&status=active'],['Active Teacher accounts',c.activeTeacherAccounts,'Teacher login accounts currently active.','/admin?role=teacher&status=active'],['Inactive accounts',c.inactiveAccounts,'Inactive login accounts of all roles; includes pending activation.','/admin?status=inactive'],['Pending account activations',c.pendingActivations,'Inactive Accounts with an unused activation token, including expired invitations.','/admin?status=pending'],['Active course offerings',c.activeOfferings,'Offerings and their referenced course, term and class group must all be active.','/academic?tab=offerings']]:[];
- return <div className="min-h-screen bg-zinc-950 text-zinc-100 p-4 sm:p-6 space-y-6"><header className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center"><ShieldCheck className="h-6 w-6 text-purple-400"/></div><div><h1 className="text-xl font-semibold text-white">{user?.name}</h1><p className="text-sm text-zinc-400">Administrator Portal</p></div></div><div className="flex flex-wrap gap-3"><Link className="btn-primary" to="/academic">Academic management</Link><Link className="btn-secondary" to="/legacy-attendance">Legacy attendance</Link><Link className="btn-secondary" to="/students">Students</Link><Link className="btn-secondary" to="/change-password">Change password</Link><button id="admin-create-account-btn" className="btn-primary flex gap-2 items-center" onClick={()=>setShowCreate(true)}><Plus className="h-4 w-4"/>Create account</button><button className="btn-secondary flex gap-2 items-center" onClick={reload}><RefreshCw className="h-4 w-4"/>Refresh</button><button className="btn-secondary flex gap-2 items-center" onClick={logout}><LogOut className="h-4 w-4"/>Logout</button></div></header>
- <nav aria-label="Additional Administrator navigation" className="flex flex-wrap gap-4"><Link className="underline" to="/admin/students">Student directory</Link><Link className="underline" to="/admin/teachers">Teacher directory</Link><Link className="underline" to="/admin/attendance">Attendance browsing</Link><Link className="underline" to="/attendance-analytics">Attendance Analytics</Link><Link className="underline" to="/attendance-corrections">Attendance corrections</Link><Link className="underline" to="/semester-reports">Semester Reports</Link></nav>
- <State request={overview}/>{c&&<><section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{cards.map(([name,count,definition,url])=><Link className="card p-5 space-y-2" to={url} key={name}><h2 className="text-sm text-zinc-400">{name}</h2><p className={"text-3xl font-bold "+(name==="Teachers"?"text-blue-400":name==="Students"?"text-emerald-400":"text-purple-400")}>{count}</p><p className="text-xs text-zinc-400">{definition}</p></Link>)}</section><section className="card p-5"><h2 className="font-semibold">Today's sessions ({overview.data.today}, Asia/Kolkata)</h2><p className="text-sm text-zinc-400 mb-3">Lectures dated today in campus time; each lecture is counted once in its recorded state.</p><div className="flex flex-wrap gap-5">{Object.entries(c.todaySessions).map(([state,count])=><Link className="underline capitalize" key={state} to={'/admin/attendance?source=sessions&from='+overview.data.today+'&to='+overview.data.today+'&state='+state}>{state}: {count}</Link>)}</div></section>
- <section className="card p-5 space-y-3"><h2 className="font-semibold">Administrative attention</h2><p className="text-sm text-zinc-400">These are records to review, not automatically errors. No account, assignment or mapping is created here.</p><ul className="space-y-2"><li><Link className="underline" to="/admin/students?status=no-account">Student profiles without login accounts: {a.studentsWithoutAccounts}</Link></li><li><Link className="underline" to="/admin?status=pending">Pending activations: {c.pendingActivations}</Link></li><li><Link className="underline" to="/academic?tab=offerings">Active offerings without a current Teacher assignment: {a.offeringsWithoutTeacher}</Link><span className="block text-xs text-zinc-400">Active structures; no existing Teacher profile assigned for today's inclusive effective dates.</span></li><li><Link className="underline" to="/admin?profile=missing">Accounts missing required profile links: {a.missingProfileLinks}</Link><span className="block text-xs text-zinc-400">Student/Teacher accounts whose linked academic profile is absent. Open account details to review.</span></li><li><Link className="underline" to="/legacy-attendance">Unmapped legacy attendance: {a.unmappedLegacy}</Link><span className="block text-xs text-zinc-400">Original attendance records without an explicit lecture-session mapping.</span></li></ul></section></>}
- <section className="card p-5 space-y-3"><h2 className="font-semibold">Academic management</h2><div className="flex flex-wrap gap-4">{[['terms','Terms'],['classes','Class groups'],['courses','Courses'],['offerings','Offerings']].map(([key,label])=><Link className="underline" key={key} to={'/academic?tab='+key}>{label}</Link>)}<Link className="underline" to="/admin/teachers">Teacher assignments</Link><Link className="underline" to="/admin/students">Student enrolments</Link><Link className="underline" to="/admin/attendance?source=sessions">Lecture sessions</Link></div><p className="text-sm text-zinc-400">Open an existing offering from a profile to manage its assignments, enrolments, roster and sessions.</p></section>
- <AccountTable refresh={refresh} onChanged={overview.retry}/>{showCreate&&<CreateAccount initiatorRole="admin" onClose={()=>setShowCreate(false)} onSuccess={reload}/>}</div>;
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../../services/api';
+import { Users, UserCheck, ClipboardCheck, Clock, ShieldCheck, User } from 'lucide-react';
+
+const StatCard = ({ icon: Icon, label, value, color, to }) => (
+    <Link to={to || '#'} className="group block">
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-800/70">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-sm text-zinc-400">{label}</p>
+                    <p className="mt-1 text-3xl font-bold text-white">{value ?? '–'}</p>
+                </div>
+                <div className={`rounded-xl p-3 ${color}`}>
+                    <Icon className="h-6 w-6" />
+                </div>
+            </div>
+        </div>
+    </Link>
+);
+
+const AdminDashboard = () => {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        api.get('/admin/stats')
+            .then((res) => {
+                if (res.data.success) setStats(res.data.stats);
+            })
+            .catch(() => setError('Failed to load stats'))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading)
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            </div>
+        );
+
+    if (error)
+        return (
+            <div className="rounded-xl border border-red-900/50 bg-red-950/30 p-4 text-red-400">{error}</div>
+        );
+
+    const cards = [
+        {
+            label: 'Active Teachers',
+            value: stats?.totalTeachers,
+            icon: UserCheck,
+            color: 'bg-emerald-500/20 text-emerald-400',
+            to: '/admin/teachers'
+        },
+        {
+            label: 'Active Students',
+            value: stats?.totalStudents,
+            icon: Users,
+            color: 'bg-blue-500/20 text-blue-400',
+            to: '/admin/students'
+        },
+        {
+            label: "Today's Sessions",
+            value: stats?.todayAttendanceCount,
+            icon: ClipboardCheck,
+            color: 'bg-pink-500/20 text-pink-400',
+            to: '/admin/attendance'
+        },
+        {
+            label: 'Recent Activity',
+            value: stats?.recentAuditLogs?.length ?? 0,
+            icon: ShieldCheck,
+            color: 'bg-purple-500/20 text-purple-400',
+            to: '/admin/audit-logs'
+        }
+    ];
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div>
+                <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+                <p className="mt-1 text-sm text-zinc-400">Institution-wide overview and management</p>
+            </div>
+
+            {/* Stat Cards */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {cards.map((c) => (
+                    <StatCard key={c.label} {...c} />
+                ))}
+            </div>
+
+            {/* Quick Actions */}
+            <div>
+                <h2 className="mb-3 text-lg font-semibold text-white">Quick Actions</h2>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    {[
+                        { to: '/admin/teachers', label: 'Teachers', icon: UserCheck },
+                        { to: '/admin/students', label: 'Students', icon: Users },
+                        { to: '/admin/attendance', label: 'Attendance', icon: ClipboardCheck },
+                        { to: '/admin/audit-logs', label: 'Audit Logs', icon: ShieldCheck },
+                        { to: '/admin/profile', label: 'Profile', icon: User }
+                    ].map(({ to, label, icon: Icon }) => (
+                        <Link
+                            key={to}
+                            to={to}
+                            className="flex flex-col items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 text-center text-sm text-zinc-300 transition-all duration-200 hover:border-zinc-600 hover:bg-zinc-800 hover:text-white"
+                        >
+                            <Icon className="h-5 w-5" />
+                            {label}
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            {/* Recent Audit Logs */}
+            {stats?.recentAuditLogs?.length > 0 && (
+                <div>
+                    <div className="mb-3 flex items-center justify-between">
+                        <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+                        <Link to="/admin/audit-logs" className="text-sm text-zinc-400 hover:text-white">
+                            View all →
+                        </Link>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800 overflow-hidden">
+                        {stats.recentAuditLogs.map((log, i) => (
+                            <div key={i} className="flex items-center gap-3 px-4 py-3 text-sm">
+                                <Clock className="h-4 w-4 flex-shrink-0 text-zinc-500" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-zinc-200">
+                                        <span className="font-medium text-white">{log.actorName}</span>{' '}
+                                        <span className="text-zinc-400">
+                                            {log.action.replace(/_/g, ' ').toLowerCase()}
+                                        </span>
+                                    </p>
+                                </div>
+                                <span className="flex-shrink-0 text-xs text-zinc-500">
+                                    {new Date(log.createdAt).toLocaleString()}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
+
 export default AdminDashboard;

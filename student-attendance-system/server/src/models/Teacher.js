@@ -45,7 +45,7 @@ const teacherSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-teacherSchema.pre('save', async function(next) {
+teacherSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
     this.password = await bcrypt.hash(this.password, 12);
     this.updatedAt = Date.now();
@@ -53,7 +53,7 @@ teacherSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-teacherSchema.methods.comparePassword = async function(candidatePassword) {
+teacherSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 

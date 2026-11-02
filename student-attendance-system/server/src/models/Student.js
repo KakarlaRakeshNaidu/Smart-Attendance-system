@@ -54,11 +54,17 @@ const studentSchema = new mongoose.Schema({
     }
 });
 
-studentSchema.pre('save', function(next) {
+studentSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
     next();
 });
 
 studentSchema.index({ academicYear: 1, branch: 1, section: 1, subsection: 1 });
-studentSchema.set('toJSON', { transform: (doc, data) => { data.faceRegistered = Array.isArray(data.faceEmbedding) && data.faceEmbedding.length > 0; delete data.faceEmbedding; return data; } });
+studentSchema.set('toJSON', {
+    transform: (doc, data) => {
+        data.faceRegistered = Array.isArray(data.faceEmbedding) && data.faceEmbedding.length > 0;
+        delete data.faceEmbedding;
+        return data;
+    }
+});
 module.exports = mongoose.model('Student', studentSchema);

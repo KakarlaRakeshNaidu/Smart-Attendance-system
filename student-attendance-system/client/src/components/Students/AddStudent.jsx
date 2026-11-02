@@ -1,7 +1,20 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import studentService from '../../services/studentService';
-import { User, Mail, Hash, BookOpen, Users, ArrowLeft, Upload, Camera, X, Check, ImagePlus, FlipHorizontal } from 'lucide-react';
+import {
+    User,
+    Mail,
+    Hash,
+    BookOpen,
+    Users,
+    ArrowLeft,
+    Upload,
+    Camera,
+    X,
+    Check,
+    ImagePlus,
+    FlipHorizontal
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AddStudent = () => {
@@ -21,10 +34,6 @@ const AddStudent = () => {
     const [cameraStream, setCameraStream] = useState(null);
     const [facingMode, setFacingMode] = useState('user');
 
-    const streamRef = useRef(null);
-    const mountedRef = useRef(false);
-    useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; streamRef.current?.getTracks().forEach(track => track.stop()); }; }, []);
-    useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const navigate = useNavigate();
@@ -41,39 +50,39 @@ const AddStudent = () => {
         }
     };
 
-    const startCamera = useCallback(async (facing = facingMode) => {
-        // Stop any existing stream first
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            setCameraStream(null);
-        }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 } }
-            });
-            if (!mountedRef.current) { stream.getTracks().forEach(track => track.stop()); return; }
-            streamRef.current = stream;
-            setCameraStream(stream);
-            setShowCamera(true);
+    const startCamera = useCallback(
+        async (facing = facingMode) => {
+            // Stop any existing stream first
+            if (cameraStream) {
+                cameraStream.getTracks().forEach((track) => track.stop());
+                setCameraStream(null);
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                setCameraStream(stream);
+                setShowCamera(true);
 
-            setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    videoRef.current.play().catch(console.error);
-                }
-            }, 100);
-        } catch (error) {
-            toast.error('Failed to access camera. Please allow camera permissions.');
-            console.error('Camera error:', error);
-        }
-    }, [cameraStream, facingMode]);
+                setTimeout(() => {
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                        videoRef.current.play().catch(console.error);
+                    }
+                }, 100);
+            } catch (error) {
+                toast.error('Failed to access camera. Please allow camera permissions.');
+                console.error('Camera error:', error);
+            }
+        },
+        [cameraStream, facingMode]
+    );
 
     const stopCamera = useCallback(() => {
         if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream.getTracks().forEach((track) => track.stop());
             setCameraStream(null);
         }
-        streamRef.current = null;
         setShowCamera(false);
     }, [cameraStream]);
 
@@ -157,7 +166,10 @@ const AddStudent = () => {
                 toast.success('Student added successfully!');
                 toast.error(`Face not registered: ${result.faceWarning}`, { duration: 5000 });
             } else {
-                toast.success(result.message || 'Student added successfully' + (faceImage ? ' with face registered' : ''));
+                toast.success(
+                    result.message ||
+                        'Student added successfully' + (faceImage ? ' with face registered' : '')
+                );
             }
             navigate('/students');
         } catch (error) {
@@ -170,7 +182,10 @@ const AddStudent = () => {
     return (
         <div className="space-y-6 animate-fadeIn">
             <div>
-                <Link to="/students" className="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition-colors">
+                <Link
+                    to="/students"
+                    className="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition-colors"
+                >
                     <ArrowLeft className="h-4 w-4" />
                     Back to Students
                 </Link>
@@ -178,7 +193,6 @@ const AddStudent = () => {
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
                 <h1 className="text-title mb-6">Add New Student</h1>
-                <p className="text-zinc-400 mb-6">This creates a Student profile. Admin enrolment and authorised account activation are separate steps.</p>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Profile Photo */}
@@ -193,7 +207,12 @@ const AddStudent = () => {
                         <label className="cursor-pointer flex items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all">
                             <Upload className="h-4 w-4" />
                             <span>Upload Photo</span>
-                            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
                         </label>
                     </div>
 
@@ -226,11 +245,19 @@ const AddStudent = () => {
                                     </button>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button type="button" onClick={captureFace} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={captureFace}
+                                        className="btn-primary flex-1 flex items-center justify-center gap-2"
+                                    >
                                         <Camera className="h-4 w-4" />
                                         Capture Face
                                     </button>
-                                    <button type="button" onClick={stopCamera} className="btn-secondary flex items-center justify-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={stopCamera}
+                                        className="btn-secondary flex items-center justify-center gap-2"
+                                    >
                                         <X className="h-4 w-4" />
                                         Cancel
                                     </button>
@@ -245,18 +272,26 @@ const AddStudent = () => {
                                         className="w-full h-48 object-cover"
                                     />
                                     <div className="absolute top-2 right-2">
-                                    <span className="bg-emerald-700 text-media px-2 py-1 rounded-lg text-xs flex items-center gap-1">
+                                        <span className="bg-emerald-600 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
                                             <Check className="h-3 w-3" />
                                             Face Captured
                                         </span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button type="button" onClick={() => startCamera()} className="btn-secondary flex-1 flex items-center justify-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => startCamera()}
+                                        className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                                    >
                                         <Camera className="h-4 w-4" />
                                         Retake
                                     </button>
-                                    <button type="button" onClick={clearFaceImage} className="btn-secondary flex items-center justify-center gap-2 text-red-400 hover:text-red-300">
+                                    <button
+                                        type="button"
+                                        onClick={clearFaceImage}
+                                        className="btn-secondary flex items-center justify-center gap-2 text-red-400 hover:text-red-300"
+                                    >
                                         <X className="h-4 w-4" />
                                         Remove
                                     </button>
@@ -276,7 +311,12 @@ const AddStudent = () => {
                                     <label className="flex-1 py-5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-emerald-700 hover:bg-emerald-900/10 transition flex flex-col items-center gap-2 text-zinc-500 hover:text-emerald-400 cursor-pointer">
                                         <ImagePlus className="h-8 w-8" />
                                         <span className="text-sm">Upload Image</span>
-                                        <input type="file" accept="image/*" onChange={handleFaceImageUpload} className="hidden" />
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFaceImageUpload}
+                                            className="hidden"
+                                        />
                                     </label>
                                 </div>
                                 <p className="text-xs text-zinc-500 text-center">
@@ -343,9 +383,7 @@ const AddStudent = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                Class
-                            </label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">Class</label>
                             <div className="relative">
                                 <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <input
@@ -360,9 +398,7 @@ const AddStudent = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                Section
-                            </label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">Section</label>
                             <div className="relative">
                                 <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <input
@@ -378,10 +414,18 @@ const AddStudent = () => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                        <button type="button" onClick={() => navigate('/students')} className="btn-secondary flex-1">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/students')}
+                            className="btn-secondary flex-1"
+                        >
                             Cancel
                         </button>
-                        <button type="submit" disabled={loading} className="btn-primary flex-1 flex items-center justify-center">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary flex-1 flex items-center justify-center"
+                        >
                             {loading ? (
                                 <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                             ) : (

@@ -75,7 +75,7 @@ const PhotoUpload = ({ onSuccess, onCancel }) => {
                             <button
                                 type="button"
                                 onClick={clearSelection}
-                    className="absolute top-0 right-0 bg-red-600 text-media p-1 rounded-full hover:bg-red-600 transition-colors"
+                                className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -103,11 +103,7 @@ const PhotoUpload = ({ onSuccess, onCancel }) => {
 
                 <div className="flex gap-3">
                     {onCancel && (
-                        <button
-                            type="button"
-                            onClick={onCancel}
-                            className="flex-1 btn-secondary"
-                        >
+                        <button type="button" onClick={onCancel} className="flex-1 btn-secondary">
                             Cancel
                         </button>
                     )}

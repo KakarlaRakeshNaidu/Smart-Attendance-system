@@ -5,7 +5,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 // Ensure upload base directories exist on startup
-['uploads/teachers', 'uploads/students'].forEach(dir => {
+['uploads/teachers', 'uploads/students'].forEach((dir) => {
     const fullPath = path.join(__dirname, '..', dir);
     if (!fs.existsSync(fullPath)) {
         fs.mkdirSync(fullPath, { recursive: true });
@@ -25,15 +25,17 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 // Middleware
-app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:3000',
-        process.env.FRONTEND_URL
-    ].filter(Boolean),
-    credentials: true
-}));
+app.use(
+    cors({
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:3000',
+            process.env.FRONTEND_URL
+        ].filter(Boolean),
+        credentials: true
+    })
+);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -61,7 +63,10 @@ app.use('/api/reports', require('./routes/semesterReportRoutes'));
 // Health check route
 app.get('/api/health', (req, res) => {
     const connected = require('mongoose').connection.readyState === 1;
-    res.status(connected ? 200 : 503).json({ success: connected, message: connected ? 'Server is running' : 'Database unavailable' });
+    res.status(connected ? 200 : 503).json({
+        success: connected,
+        message: connected ? 'Server is running' : 'Database unavailable'
+    });
 });
 
 // Error handling middleware
@@ -78,7 +83,11 @@ async function start() {
     await connectDB();
     const { Notification, NotificationWork } = require('./models/Notification');
     await Promise.all([Notification.init(), NotificationWork.init()]);
-    await Promise.all([require('./models/Administration').TeacherAcademicAccess.init(), require('./models/Administration').AuditLog.init(), ...Object.values(require('./models/Academic')).map(model => model.init())]);
+    await Promise.all([
+        require('./models/Administration').TeacherAcademicAccess.init(),
+        require('./models/Administration').AuditLog.init(),
+        ...Object.values(require('./models/Academic')).map((model) => model.init())
+    ]);
     const stopNotifications = require('./services/notificationReconciliation').startWorker();
     const server = app.listen(PORT, () => {
         console.log(`Server is running on port ${server.address().port}`);
@@ -89,8 +98,8 @@ async function start() {
         if (err.code === 'EADDRINUSE') {
             console.error(
                 `\n[ERROR] Port ${PORT} is already in use.\n` +
-                `Run this command to free it, then restart:\n` +
-                `  lsof -i :${PORT} -t | xargs kill -9\n`
+                    `Run this command to free it, then restart:\n` +
+                    `  lsof -i :${PORT} -t | xargs kill -9\n`
             );
         } else {
             console.error('[ERROR] Server error:', err.message);
@@ -111,14 +120,13 @@ async function start() {
         setTimeout(() => process.exit(1), 5000).unref();
     };
     process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT',  () => shutdown('SIGINT'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-if (require.main === module) start().catch(() => {
-    console.error('Server startup failed. Check database configuration.');
-    process.exitCode = 1;
-});
-
-
+if (require.main === module)
+    start().catch(() => {
+        console.error('Server startup failed. Check database configuration.');
+        process.exitCode = 1;
+    });
 
 module.exports = app;

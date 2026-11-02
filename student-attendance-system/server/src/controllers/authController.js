@@ -15,6 +15,8 @@ const { generateToken } = require('../services/jwtService');
 const buildUserResponse = async (account) => {
     const base = {
         profilePhoto: account.profilePhoto || '',
+        subject: account.subject || '',
+        description: account.description || '',
         id: account._id,
         name: account.name,
         email: account.email,
@@ -115,15 +117,18 @@ exports.activate = async (req, res) => {
         }
 
         if (password.length < 6) {
-            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+            return res
+                .status(400)
+                .json({ success: false, message: 'Password must be at least 6 characters' });
         }
 
         // Find account whose activationTokenHash matches SHA-256 of token
         const crypto = require('crypto');
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
-        const targetAccount = await Account.findOne({ activationTokenHash: tokenHash })
-            .select('+activationTokenHash +activationTokenExpiry +passwordHash');
+        const targetAccount = await Account.findOne({ activationTokenHash: tokenHash }).select(
+            '+activationTokenHash +activationTokenExpiry +passwordHash'
+        );
 
         if (!targetAccount || targetAccount.isActive) {
             return res.status(400).json({ success: false, message: 'Invalid or expired activation token' });
@@ -137,7 +142,9 @@ exports.activate = async (req, res) => {
         targetAccount.consumeActivationToken();
         await targetAccount.save();
 
-        return res.status(200).json({ success: true, message: 'Account activated successfully. You can now log in.' });
+        return res
+            .status(200)
+            .json({ success: true, message: 'Account activated successfully. You can now log in.' });
     } catch (error) {
         return respondError(res, error);
     }
@@ -152,11 +159,15 @@ exports.changePassword = async (req, res) => {
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword) {
-            return res.status(400).json({ success: false, message: 'Please provide current and new password' });
+            return res
+                .status(400)
+                .json({ success: false, message: 'Please provide current and new password' });
         }
 
         if (newPassword.length < 6) {
-            return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+            return res
+                .status(400)
+                .json({ success: false, message: 'New password must be at least 6 characters' });
         }
 
         const account = await Account.findById(req.accountId).select('+passwordHash');
@@ -189,7 +200,8 @@ exports.changePassword = async (req, res) => {
 exports.register = async (req, res) => {
     return res.status(403).json({
         success: false,
-        message: 'Public registration is disabled. Teacher and Admin accounts are created by an Admin. Use the activation link sent by your administrator.'
+        message:
+            'Public registration is disabled. Teacher and Admin accounts are created by an Admin. Use the activation link sent by your administrator.'
     });
 };
 
@@ -204,8 +216,9 @@ exports.getActivationContext = async (req, res) => {
         }
         const crypto = require('crypto');
         const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-        const account = await Account.findOne({ activationTokenHash: tokenHash })
-            .select('+activationTokenHash +activationTokenExpiry');
+        const account = await Account.findOne({ activationTokenHash: tokenHash }).select(
+            '+activationTokenHash +activationTokenExpiry'
+        );
         if (!account || account.isActive || !account.verifyActivationToken(rawToken)) {
             return res.status(400).json({ success: false, message: 'Invalid or expired activation token' });
         }

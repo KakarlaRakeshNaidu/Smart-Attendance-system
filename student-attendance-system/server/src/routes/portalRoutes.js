@@ -1,6 +1,10 @@
-const router=require('express').Router();
-const {protect,requireRole}=require('../middleware/authMiddleware');
-const C=require('../controllers/portalController');
-router.use(protect,requireRole('student'),require('../middleware/validateRequest'));
-router.get('/profile',C.profile);router.get('/enrollments',C.enrollments);router.get('/attendance/summary',C.summary);router.get('/attendance',C.attendance);router.get('/attendance/:subjectId',C.subject);
-module.exports=router;
+const router = require('express').Router();
+const { protect, requireRole } = require('../middleware/authMiddleware');
+const C = require('../controllers/portalController');
+router.use(protect, requireRole('student'), require('../middleware/validateRequest'));
+router.get('/profile', C.profile);
+router.get('/enrollments', C.enrollments);
+router.get('/attendance/summary', C.summary);
+router.get('/attendance', C.attendance);
+router.get('/attendance/:subjectId', C.subject);
+module.exports = router;

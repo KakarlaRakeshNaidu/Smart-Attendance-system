@@ -128,6 +128,8 @@ coverage.xml
 # Preserve meaningful source regression tests. Generated reports, caches and
 # disposable *.local.* helpers are ignored above, rather than all test folders.
 
+!.env.docker.example
+
 # Private development and verification files
 .local-work/
 .codex/

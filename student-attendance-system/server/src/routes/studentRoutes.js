@@ -31,15 +31,23 @@ const optionalUpload = (req, res, next) => {
 router.get('/me', requireRole('student'), getMyProfile);
 
 // Teacher and Admin: full student directory
-router.route('/')
+router
+    .route('/')
     .get(requireRole('teacher', 'admin'), getAllStudents)
     .post(requireRole('teacher', 'admin'), optionalUpload, async (req, res) => {
         req.params.kind = 'students';
         if (req.body.academicYear || req.body.branch || req.body.password) {
-            if (req.userRole === 'teacher') { try { const D = require('../services/administrationService'); await D.access(req, D.accessFields(req.body)); } catch (error) { return require('../utils/respondError')(res,error); } }
-            return require('../controllers/directoryController').create(req,res);
+            if (req.userRole === 'teacher') {
+                try {
+                    const D = require('../services/administrationService');
+                    await D.access(req, D.accessFields(req.body));
+                } catch (error) {
+                    return require('../utils/respondError')(res, error);
+                }
+            }
+            return require('../controllers/directoryController').create(req, res);
         }
-        return addStudent(req,res);
+        return addStudent(req, res);
     });
 
 router.use('/:id', async (req, res, next) => {
@@ -47,16 +55,22 @@ router.use('/:id', async (req, res, next) => {
         if (req.params.id === 'download') return next();
         if (req.userRole === 'teacher') {
             const scope = await require('../services/administrationService').studentFilter(req);
-            if (!await require('../models/Student').exists({ $and: [{ _id: req.params.id }, scope] })) return res.status(403).json({ success: false, message: 'Student is outside your assigned scope.' });
+            if (!(await require('../models/Student').exists({ $and: [{ _id: req.params.id }, scope] })))
+                return res
+                    .status(403)
+                    .json({ success: false, message: 'Student is outside your assigned scope.' });
         }
         next();
-    } catch (error) { return require('../utils/respondError')(res, error); }
+    } catch (error) {
+        return require('../utils/respondError')(res, error);
+    }
 });
 
 router.get('/download/csv', requireRole('teacher', 'admin'), downloadStudentsCSV);
 
 // Single student - teacher/admin only
-router.route('/:id')
+router
+    .route('/:id')
     .get(requireRole('teacher', 'admin'), getStudent)
     .put(requireRole('teacher', 'admin'), updateStudent)
     .delete(requireRole('teacher', 'admin'), deleteStudent);

@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import attendanceService from '../../services/attendanceService';
+import attendanceService from '../../services/batchAttendanceService';
 import { Download, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DownloadAttendance = () => {
-    const [source,setSource] = useState('all');
-    const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const [activeTab, setActiveTab] = useState('single');
-    const [date, setDate] = useState(today);
-    const [fromDate, setFromDate] = useState(today);
-    const [toDate, setToDate] = useState(today);
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);
+    const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
 
     const handleDownload = async () => {
@@ -19,10 +17,10 @@ const DownloadAttendance = () => {
             let filename;
 
             if (activeTab === 'single') {
-                responseData = await attendanceService.downloadAttendanceCSV(date, source);
+                responseData = await attendanceService.downloadAttendanceCSV(date);
                 filename = `attendance_${date}.csv`;
             } else {
-                responseData = await attendanceService.downloadAttendanceCSVRange(fromDate, toDate, source);
+                responseData = await attendanceService.downloadAttendanceCSVRange(fromDate, toDate);
                 filename = `attendance_${fromDate}_to_${toDate}.csv`;
             }
 
@@ -44,7 +42,7 @@ const DownloadAttendance = () => {
 
             // Read the text to check if it's a JSON error response
             const text = await blob.text();
-            
+
             if (text.startsWith('{') && text.includes('success')) {
                 try {
                     const errorData = JSON.parse(text);
@@ -83,25 +81,19 @@ const DownloadAttendance = () => {
 
     return (
         <div className="max-w-md mx-auto">
-            <h2 className="text-section mb-4 flex items-center">
-                <Download className="h-5 w-5 mr-2 text-primary" />
+            <h2 className="text-section mb-4 flex items-center text-zinc-100">
+                <Download className="h-5 w-5 mr-2 text-zinc-100" />
                 Download Attendance
             </h2>
 
-            <label className="block text-sm text-zinc-400 mb-4">Records
-                <select aria-label="Download records" className="input-field mt-1" value={source} onChange={e=>setSource(e.target.value)}>
-                    <option value="all">All attendance</option><option value="sessions">Course/session attendance</option><option value="legacy">Legacy attendance</option>
-                </select>
-            </label>
-            <p className="text-sm text-zinc-400 mb-4">Dates use Asia/Kolkata. CSVs include course, term, class, session identity and finalisation state; multiple lectures are not combined.</p>
             {/* Tabs */}
-            <div className="flex border-b border-gray-200 mb-6">
+            <div className="flex border-b border-zinc-800 mb-6">
                 <button
                     onClick={() => setActiveTab('single')}
                     className={`flex-1 py-3 text-center font-medium transition-colors ${
                         activeTab === 'single'
-                            ? 'text-primary border-b-2 border-primary'
-                            : 'text-gray-600 hover:text-gray-800'
+                            ? 'text-zinc-100 border-b-2 border-zinc-100'
+                            : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                 >
                     <Calendar className="h-4 w-4 inline mr-2" />
@@ -111,8 +103,8 @@ const DownloadAttendance = () => {
                     onClick={() => setActiveTab('range')}
                     className={`flex-1 py-3 text-center font-medium transition-colors ${
                         activeTab === 'range'
-                            ? 'text-primary border-b-2 border-primary'
-                            : 'text-gray-600 hover:text-gray-800'
+                            ? 'text-zinc-100 border-b-2 border-zinc-100'
+                            : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                 >
                     <Calendar className="h-4 w-4 inline mr-2" />
@@ -124,11 +116,9 @@ const DownloadAttendance = () => {
                 {/* Single Date Tab */}
                 {activeTab === 'single' && (
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Select Date
-                        </label>
+                        <label className="block text-sm font-medium text-zinc-300 mb-2">Select Date</label>
                         <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
                             <input
                                 type="date"
                                 value={date}
@@ -143,11 +133,9 @@ const DownloadAttendance = () => {
                 {activeTab === 'range' && (
                     <>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                From Date
-                            </label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">From Date</label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
                                 <input
                                     type="date"
                                     value={fromDate}
@@ -157,11 +145,9 @@ const DownloadAttendance = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                To Date
-                            </label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">To Date</label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
                                 <input
                                     type="date"
                                     value={toDate}
@@ -173,7 +159,11 @@ const DownloadAttendance = () => {
                     </>
                 )}
 
-                <button onClick={handleDownload} disabled={loading} className="w-full btn-primary flex items-center justify-center gap-2">
+                <button
+                    onClick={handleDownload}
+                    disabled={loading}
+                    className="w-full btn-primary flex items-center justify-center gap-2"
+                >
                     {loading ? (
                         <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (

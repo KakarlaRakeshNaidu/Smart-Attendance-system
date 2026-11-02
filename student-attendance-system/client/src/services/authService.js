@@ -1,19 +1,17 @@
 import api from './api';
+import { readSession, writeSession, clearSession } from './authStorage';
 
 const authService = {
-    login: async (email, password) => {
+    login: async (email, password, remember = true) => {
         const response = await api.post('/auth/login', { email, password });
         if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            writeSession(response.data.token, response.data.user, remember);
         }
         return response.data;
     },
 
     logout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('teacher'); // legacy cleanup
+        clearSession();
     },
 
     getMe: async () => {
@@ -33,17 +31,18 @@ const authService = {
 
     getCurrentUser: () => {
         try {
-            const u = localStorage.getItem('user');
+            const u = readSession('user');
             return u ? JSON.parse(u) : null;
-        } catch { return null; }
+        } catch {
+            return null;
+        }
     },
 
-    isAuthenticated: () => !!localStorage.getItem('token'),
+    isAuthenticated: () => !!readSession('token'),
     getActivationContext: async (token) => {
         const response = await api.get(`/auth/activation-context?token=${encodeURIComponent(token)}`);
         return response.data;
-    },
-
+    }
 };
 
 export default authService;

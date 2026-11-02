@@ -14,9 +14,15 @@ exports.getAllStudents = async (req, res) => {
         const filter = { $and: [scope, { status: { $nin: ['archived', 'inactive'] } }] };
         const profiles = await Student.find(filter).select('-faceEmbedding').sort({ createdAt: -1 });
         // Return registration status without exposing biometric vectors.
-        const registered = await Student.find({ $and: [filter, {'faceEmbedding.0':{$exists:true}}] }).select('_id').lean();
-        const registeredIds = new Set(registered.map(s=>String(s._id)));
-        const students = profiles.map(s=>({...s.toJSON(),id:s.id,faceRegistered:registeredIds.has(String(s._id))}));
+        const registered = await Student.find({ $and: [filter, { 'faceEmbedding.0': { $exists: true } }] })
+            .select('_id')
+            .lean();
+        const registeredIds = new Set(registered.map((s) => String(s._id)));
+        const students = profiles.map((s) => ({
+            ...s.toJSON(),
+            id: s.id,
+            faceRegistered: registeredIds.has(String(s._id))
+        }));
 
         res.status(200).json({
             success: true,
@@ -57,7 +63,13 @@ exports.getStudent = async (req, res) => {
 exports.addStudent = async (req, res) => {
     try {
         const { studentId, name, email, class: studentClass, section, faceImage } = req.body;
-        if (typeof studentId !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(studentId) || typeof name !== 'string' || !name.trim()) return res.status(400).json({ success: false, message: 'Student ID and name are required.' });
+        if (
+            typeof studentId !== 'string' ||
+            !/^[a-zA-Z0-9_-]+$/.test(studentId) ||
+            typeof name !== 'string' ||
+            !name.trim()
+        )
+            return res.status(400).json({ success: false, message: 'Student ID and name are required.' });
 
         // Check if student ID already exists
         const existingStudent = await Student.findOne({ studentId });
@@ -73,9 +85,7 @@ exports.addStudent = async (req, res) => {
 
         // Handle profile photo from file upload
         if (req.file) {
-            const relativePath = req.file.path
-                .replace(/\\/g, '/')
-                .split('uploads/')[1];
+            const relativePath = req.file.path.replace(/\\/g, '/').split('uploads/')[1];
             profilePhotoPath = `/uploads/${relativePath}`;
         }
 
@@ -86,7 +96,7 @@ exports.addStudent = async (req, res) => {
                 const buffer = Buffer.from(base64Data, 'base64');
                 const studentDir = path.join(__dirname, '../../uploads/students', studentId);
                 if (!fs.existsSync(studentDir)) fs.mkdirSync(studentDir, { recursive: true });
-                const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+                const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
                 fs.writeFileSync(path.join(studentDir, filename), buffer);
                 profilePhotoPath = `/uploads/students/${studentId}/${filename}`;
             } catch (saveError) {
@@ -103,7 +113,7 @@ exports.addStudent = async (req, res) => {
             email: email ? email.trim().toLowerCase() : undefined,
             class: studentClass || '',
             section: section || '',
-            faceEmbedding: [],          // will be updated after face registration
+            faceEmbedding: [], // will be updated after face registration
             registeredBy: req.userRole === 'teacher' ? req.teacherId : null,
             profilePhoto: profilePhotoPath
         });
@@ -131,7 +141,8 @@ exports.addStudent = async (req, res) => {
             success: true,
             message: faceWarning
                 ? `Student added. Note: ${faceWarning}`
-                : 'Student added successfully' + (faceImage && student.faceEmbedding.length > 0 ? ' with face registered' : ''),
+                : 'Student added successfully' +
+                  (faceImage && student.faceEmbedding.length > 0 ? ' with face registered' : ''),
             student,
             faceWarning: faceWarning || null
         });
@@ -147,11 +158,18 @@ exports.updateStudent = async (req, res) => {
     try {
         const linked = await require('../models/Account').findOne({ studentProfileId: req.params.id });
         if (linked && req.body.email !== undefined && req.body.email.trim().toLowerCase() !== linked.email) {
-            return res.status(409).json({ success: false, message: 'Email belongs to a linked login account and cannot be changed here.' });
+            return res.status(409).json({
+                success: false,
+                message: 'Email belongs to a linked login account and cannot be changed here.'
+            });
         }
         const student = await Student.findByIdAndUpdate(
             req.params.id,
-            Object.fromEntries(Object.entries(req.body).filter(([key]) => ['name', 'email', 'studentId', 'class', 'section'].includes(key))),
+            Object.fromEntries(
+                Object.entries(req.body).filter(([key]) =>
+                    ['name', 'email', 'studentId', 'class', 'section'].includes(key)
+                )
+            ),
             { new: true, runValidators: true }
         );
 
@@ -187,8 +205,15 @@ exports.deleteStudent = async (req, res) => {
         }
 
         const { CourseOffering, LectureSession } = require('../models/Academic');
-        if (await CourseOffering.exists({'enrolments.studentId':student._id}) || await LectureSession.exists({'roster.studentId':student._id})) {
-            return res.status(409).json({success:false,message:'This academic profile is referenced. Withdraw enrolments instead of deleting history.'});
+        if (
+            (await CourseOffering.exists({ 'enrolments.studentId': student._id })) ||
+            (await LectureSession.exists({ 'roster.studentId': student._id }))
+        ) {
+            return res.status(409).json({
+                success: false,
+                message:
+                    'This academic profile is referenced. Withdraw enrolments instead of deleting history.'
+            });
         }
         // Remove from face recognition database
         if (student.studentId) {
@@ -261,7 +286,7 @@ exports.registerFace = async (req, res) => {
                 const buffer = Buffer.from(base64Data, 'base64');
                 const studentDir = path.join(__dirname, '../../uploads/students', student.studentId);
                 if (!fs.existsSync(studentDir)) fs.mkdirSync(studentDir, { recursive: true });
-                const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+                const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
                 const filepath = path.join(studentDir, filename);
                 fs.writeFileSync(filepath, buffer);
                 student.profilePhoto = `/uploads/students/${student.studentId}/${filename}`;
@@ -311,7 +336,7 @@ exports.updateProfilePhoto = async (req, res) => {
             const buffer = Buffer.from(base64Data, 'base64');
             const studentDir = path.join(__dirname, '../../uploads/students', student.studentId);
             if (!fs.existsSync(studentDir)) fs.mkdirSync(studentDir, { recursive: true });
-            const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+            const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
             const filepath = path.join(studentDir, filename);
             fs.writeFileSync(filepath, buffer);
             student.profilePhoto = `/uploads/students/${student.studentId}/${filename}`;
@@ -340,9 +365,15 @@ exports.downloadStudentsCSV = async (req, res) => {
         const filter = { $and: [scope, { status: { $nin: ['archived', 'inactive'] } }] };
         const profiles = await Student.find(filter).select('-faceEmbedding').sort({ createdAt: -1 });
         // Return registration status without exposing biometric vectors.
-        const registered = await Student.find({ $and: [filter, {'faceEmbedding.0':{$exists:true}}] }).select('_id').lean();
-        const registeredIds = new Set(registered.map(s=>String(s._id)));
-        const students = profiles.map(s=>({...s.toJSON(),id:s.id,faceRegistered:registeredIds.has(String(s._id))}));
+        const registered = await Student.find({ $and: [filter, { 'faceEmbedding.0': { $exists: true } }] })
+            .select('_id')
+            .lean();
+        const registeredIds = new Set(registered.map((s) => String(s._id)));
+        const students = profiles.map((s) => ({
+            ...s.toJSON(),
+            id: s.id,
+            faceRegistered: registeredIds.has(String(s._id))
+        }));
         const csvData = generateStudentListCSV(students);
 
         res.setHeader('Content-Type', 'text/csv');

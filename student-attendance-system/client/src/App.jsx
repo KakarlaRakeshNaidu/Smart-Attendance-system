@@ -1,155 +1,258 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import Sidebar from './components/common/Sidebar';
 import PrivateRoute from './components/common/PrivateRoute';
-import AccessDenied from './components/common/AccessDenied';
-import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
-import Loader from './components/common/Loader';
+import PageSkeleton from './components/common/PageSkeleton';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import Activate from './components/Auth/Activate';
-import ChangePassword from './components/Auth/ChangePassword';
-import Attendance from './pages/Attendance';
-import Dashboard from './components/Dashboard/Dashboard';
-import StudentList from './components/Students/StudentList';
-import AddStudent from './components/Students/AddStudent';
-import { AcademicHome, OfferingDetail, SessionAttendance, LegacyAttendance } from './components/Academic/AcademicPages';
-import TeacherProfile from './components/Profile/TeacherProfile';
-import EditProfile from './components/Profile/EditProfile';
-import StudentDashboard from './components/Student/StudentDashboard';
-import { MyCourses, MyCourse, MySession, MyAttendance, MyProfile } from './components/Student/StudentPortalPages';
-import AdminDashboard from './components/Admin/AdminDashboard';
-import AttendanceAnalytics from './components/Analytics/AttendanceAnalytics';
-import Notifications from './components/Notifications/Notifications';
-import { NotificationProvider } from './components/Notifications/notificationState';
-import { CorrectionQueue, CorrectionSession, CorrectionDetail } from './components/Corrections/Corrections';
-import SemesterReports from './components/Reports/SemesterReports';
-import { AdminDirectory, AdminProfileDetail, AdminAccountDetail, AdminAttendance } from './components/Admin/AdminPortalPages';
 import { useAuth } from './context/authContextState';
+import { NotificationProvider } from './components/Notifications/notificationState';
 import { ThemeControl } from './components/common/ThemeControl';
-
-// Role-based root redirect
-const RootRedirect = () => {
-    const { isAuthenticated, role, loading } = useAuth();
-    if (loading) return <Loader />;
-    if (!isAuthenticated) return <Navigate to="/login" replace />;
-    if (role === 'teacher') return <Navigate to="/dashboard" replace />;
-    if (role === 'admin')   return <Navigate to="/admin" replace />;
-    if (role === 'student') return <Navigate to="/my-attendance" replace />;
-    return <Navigate to="/login" replace />;
-};
-
+const LandingPage = lazy(() => import('./components/Landing/LandingPage'));
+const Login = lazy(() => import('./components/Auth/Login'));
+const Activate = lazy(() => import('./components/Auth/Activate'));
+const ChangePassword = lazy(() => import('./components/Auth/ChangePassword'));
+const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
+const StudentList = lazy(() => import('./components/Students/StudentList'));
+const AddStudent = lazy(() => import('./components/Students/AddStudent'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const LectureAttendance = lazy(() => import('./pages/LectureAttendance'));
+const TeacherProfile = lazy(() => import('./components/Profile/TeacherProfile'));
+const EditProfile = lazy(() => import('./components/Profile/EditProfile'));
+const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard'));
+const TeacherManagement = lazy(() => import('./components/Admin/TeacherManagement'));
+const StudentManagement = lazy(() => import('./components/Admin/StudentManagement'));
+const AdminAddStudent = lazy(() => import('./components/Admin/AddStudent'));
+const AdminAttendance = lazy(() => import('./components/Admin/AdminAttendance'));
+const AuditLogs = lazy(() => import('./components/Admin/AuditLogs'));
+const ClassManagement = lazy(() => import('./components/Admin/ClassManagement'));
+const SubjectManagement = lazy(() => import('./components/Admin/SubjectManagement'));
+const EnrollmentManagement = lazy(() => import('./components/Admin/EnrollmentManagement'));
+const AssignmentManagement = lazy(() => import('./components/Admin/AssignmentManagement'));
+const StudentDashboard = lazy(() => import('./components/Student/StudentDashboard'));
+const StudentAttendanceView = lazy(() => import('./components/Student/StudentAttendanceView'));
+const StudentReports = lazy(() => import('./components/Student/StudentReports'));
+const StudentProfile = lazy(() => import('./components/Student/StudentProfile'));
+const AttendanceAnalytics = lazy(() => import('./components/Analytics/AttendanceAnalytics'));
+const Notifications = lazy(() => import('./components/Notifications/Notifications'));
+const SemesterReports = lazy(() => import('./components/Reports/SemesterReports'));
+const AccessDenied = lazy(() => import('./components/common/AccessDenied'));
+const academic = (name) =>
+    lazy(() => import('./components/Academic/AcademicPages').then((m) => ({ default: m[name] })));
+const student = (name) =>
+    lazy(() => import('./components/Student/StudentPortalPages').then((m) => ({ default: m[name] })));
+const correction = (name) =>
+    lazy(() => import('./components/Corrections/Corrections').then((m) => ({ default: m[name] })));
+const admin = (name) =>
+    lazy(() => import('./components/Admin/AdminPortalPages').then((m) => ({ default: m[name] })));
+const AcademicHome = academic('AcademicHome'),
+    OfferingDetail = academic('OfferingDetail'),
+    SessionAttendance = academic('SessionAttendance'),
+    LegacyAttendance = academic('LegacyAttendance');
+const MyCourses = student('MyCourses'),
+    MyCourse = student('MyCourse'),
+    MySession = student('MySession'),
+    MyAttendance = student('MyAttendance'),
+    MyProfile = student('MyProfile');
+const CorrectionQueue = correction('CorrectionQueue'),
+    CorrectionSession = correction('CorrectionSession'),
+    CorrectionDetail = correction('CorrectionDetail');
+const Accounts = lazy(() => import('./components/Admin/Accounts'));
+const AttendanceBrowser = admin('AdminAttendance');
+const AdminDirectory = admin('AdminDirectory'),
+    AdminAccountDetail = admin('AdminAccountDetail'),
+    AdminProfileDetail = admin('AdminProfileDetail');
+const guard = (element, roles) => <PrivateRoute roles={roles}>{element}</PrivateRoute>;
 const App = () => {
     const location = useLocation();
-    const { isAuthenticated, role, loading } = useAuth();
+    const { isAuthenticated, role } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-
-    const isAuthPage = ['/login', '/register', '/activate'].includes(location.pathname);
-    // Student and admin use full-width standalone pages
-    const isStandalonePage = role === 'student' || role === 'admin' || !isAuthenticated;
-    const showShell = isAuthenticated && !isAuthPage && !isStandalonePage;
-
+    const publicPage = ['/', '/login', '/register', '/activate'].includes(location.pathname);
+    const shell = isAuthenticated && !publicPage;
+    const home =
+        role === 'admin' ? '/admin/dashboard' : role === 'student' ? '/student/dashboard' : '/dashboard';
     return (
-        <NotificationProvider><div className="min-h-screen bg-zinc-950 text-zinc-100">
-            {!showShell && location.pathname !== '/login' && <div className="flex justify-end px-4 pt-3"><ThemeControl /></div>}
-            {showShell && (
-                <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-            )}
-            <div className={showShell ? 'lg:pl-72' : ''}>
-                {showShell && (
-                    <Navbar onMenuToggle={() => setSidebarOpen(o => !o)} />
-                )}
-                <main className={isAuthPage ? 'min-h-screen' : showShell ? 'px-6 py-6' : ''}>
-                    <ErrorBoundary key={location.pathname}>
-                    <Routes>
-                        <Route path="/semester-reports" element={<PrivateRoute><SemesterReports /></PrivateRoute>} />
-                        <Route path="/attendance-corrections" element={<PrivateRoute><CorrectionQueue /></PrivateRoute>} />
-                        <Route path="/attendance-corrections/sessions/:sessionId" element={<PrivateRoute roles={['student']}><CorrectionSession /></PrivateRoute>} />
-                        <Route path="/attendance-corrections/sessions/:sessionId/requests/:requestId" element={<PrivateRoute><CorrectionDetail /></PrivateRoute>} />
-                        <Route path="/notifications" element={<PrivateRoute roles={['student', 'teacher']}><Notifications /></PrivateRoute>} />
-                        {/* Public */}
-                        <Route path="/login"    element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/activate" element={<Activate />} />
-
-                        {/* Access denied */}
-                        <Route path="/access-denied" element={<AccessDenied />} />
-
-                        {/* Teacher routes */}
-                        <Route path="/dashboard" element={
-                            <PrivateRoute roles={['teacher']}>
-                                <Dashboard />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/students" element={
-                            <PrivateRoute roles={['teacher', 'admin']}>
-                                <StudentList />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/students/add" element={
-                            <PrivateRoute roles={['teacher', 'admin']}>
-                                <AddStudent />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/attendance" element={
-                            <PrivateRoute roles={['teacher']}>
-                                <Attendance />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/profile" element={
-                            <PrivateRoute roles={['teacher']}>
-                                <TeacherProfile />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/profile/edit" element={
-                            <PrivateRoute roles={['teacher']}>
-                                <EditProfile />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/change-password" element={
-                            <PrivateRoute>
-                                <ChangePassword />
-                            </PrivateRoute>
-                        } />
-
-                        {/* Student routes */}
-                        <Route path="/my-attendance" element={
-                            <PrivateRoute roles={['student']}>
-                                <StudentDashboard />
-                            </PrivateRoute>
-                        } />
-
-                        <Route path="/attendance-analytics" element={<PrivateRoute roles={['student','teacher','admin']}><AttendanceAnalytics /></PrivateRoute>} />
-                        <Route path="/my-attendance/history" element={<PrivateRoute roles={['student']}><MyAttendance /></PrivateRoute>} />
-                        <Route path="/my-profile" element={<PrivateRoute roles={['student']}><MyProfile /></PrivateRoute>} />
-
-                        {/* Admin routes */}
-                        <Route path="/admin" element={
-                            <PrivateRoute roles={['admin']}>
-                                <AdminDashboard />
-                            </PrivateRoute>
-                        } />
-
-                        <Route path="/admin/:kind" element={<PrivateRoute roles={['admin']}><AdminDirectory /></PrivateRoute>} />
-<Route path="/admin/accounts/:id" element={<PrivateRoute roles={['admin']}><AdminAccountDetail /></PrivateRoute>} />
-<Route path="/admin/:kind/:id" element={<PrivateRoute roles={['admin']}><AdminProfileDetail /></PrivateRoute>} />
-<Route path="/admin/attendance" element={<PrivateRoute roles={['admin']}><AdminAttendance /></PrivateRoute>} />
-<Route path="/academic" element={<PrivateRoute>{role === 'student' ? <MyCourses /> : <AcademicHome />}</PrivateRoute>} />
-                        <Route path="/academic/offerings/:id" element={<PrivateRoute>{role === 'student' ? <MyCourse /> : <OfferingDetail />}</PrivateRoute>} />
-                        <Route path="/academic/sessions/:id" element={<PrivateRoute>{role === 'student' ? <MySession /> : <SessionAttendance />}</PrivateRoute>} />
-                        <Route path="/legacy-attendance" element={<PrivateRoute><LegacyAttendance /></PrivateRoute>} />
-                        {/* Root redirect */}
-                        <Route path="/" element={<RootRedirect />} />
-
-                        {/* 404 */}
-                        <Route path="*" element={<RootRedirect />} />
-                    </Routes>
-                    </ErrorBoundary>
-                </main>
+        <NotificationProvider>
+            <div className="min-h-screen bg-zinc-950 text-zinc-100">
+                {shell && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+                <div className={shell ? 'lg:pl-72' : ''}>
+                    {shell && <Navbar onMenuToggle={() => setSidebarOpen((v) => !v)} />}
+                    {!shell && (
+                        <div className="fixed right-4 bottom-4 z-50">
+                            <ThemeControl />
+                        </div>
+                    )}
+                    <main className={publicPage ? 'min-h-screen' : 'px-4 py-4 sm:px-6 sm:py-6'}>
+                        <ErrorBoundary key={location.pathname}>
+                            <Suspense fallback={<PageSkeleton />}>
+                                <Routes>
+                                    <Route path="/" element={<LandingPage />} />
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/register" element={<Navigate to="/login" replace />} />
+                                    <Route path="/activate" element={<Activate />} />
+                                    <Route path="/access-denied" element={<AccessDenied />} />
+                                    <Route path="/change-password" element={guard(<ChangePassword />)} />
+                                    <Route path="/dashboard" element={guard(<Dashboard />, ['teacher'])} />
+                                    <Route
+                                        path="/students"
+                                        element={guard(<StudentList />, ['teacher', 'admin'])}
+                                    />
+                                    <Route
+                                        path="/students/add"
+                                        element={guard(<AddStudent />, ['teacher', 'admin'])}
+                                    />
+                                    <Route path="/attendance" element={guard(<Attendance />, ['teacher'])} />
+                                    <Route
+                                        path="/lecture-attendance"
+                                        element={guard(<LectureAttendance />, ['teacher'])}
+                                    />
+                                    <Route
+                                        path="/profile"
+                                        element={guard(<TeacherProfile />, ['teacher', 'admin'])}
+                                    />
+                                    <Route
+                                        path="/profile/edit"
+                                        element={guard(<EditProfile />, ['teacher', 'admin'])}
+                                    />
+                                    <Route
+                                        path="/admin"
+                                        element={<Navigate to="/admin/dashboard" replace />}
+                                    />
+                                    <Route
+                                        path="/admin/dashboard"
+                                        element={guard(<AdminDashboard />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/teachers"
+                                        element={guard(<TeacherManagement />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/students"
+                                        element={guard(<StudentManagement />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/students/add"
+                                        element={guard(<AdminAddStudent />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/classes"
+                                        element={guard(<ClassManagement />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/subjects"
+                                        element={guard(<SubjectManagement />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/enrollments"
+                                        element={guard(<EnrollmentManagement />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/assignments"
+                                        element={guard(<AssignmentManagement />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/attendance"
+                                        element={guard(<AdminAttendance />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/attendance-browser"
+                                        element={guard(<AttendanceBrowser />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/audit-logs"
+                                        element={guard(<AuditLogs />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/profile"
+                                        element={guard(<TeacherProfile />, ['admin'])}
+                                    />
+                                    <Route path="/admin/accounts" element={guard(<Accounts />, ['admin'])} />
+                                    <Route
+                                        path="/admin/accounts/:id"
+                                        element={guard(<AdminAccountDetail />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/directories/:kind"
+                                        element={guard(<AdminDirectory />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/admin/:kind/:id"
+                                        element={guard(<AdminProfileDetail />, ['admin'])}
+                                    />
+                                    <Route
+                                        path="/student/dashboard"
+                                        element={guard(<StudentDashboard />, ['student'])}
+                                    />
+                                    <Route
+                                        path="/student/attendance"
+                                        element={guard(<StudentAttendanceView />, ['student'])}
+                                    />
+                                    <Route
+                                        path="/student/reports"
+                                        element={guard(<StudentReports />, ['student'])}
+                                    />
+                                    <Route
+                                        path="/student/profile"
+                                        element={guard(<StudentProfile />, ['student'])}
+                                    />
+                                    <Route
+                                        path="/my-attendance"
+                                        element={<Navigate to="/student/dashboard" replace />}
+                                    />
+                                    <Route
+                                        path="/my-attendance/history"
+                                        element={guard(<MyAttendance />, ['student'])}
+                                    />
+                                    <Route path="/my-profile" element={guard(<MyProfile />, ['student'])} />
+                                    <Route
+                                        path="/academic"
+                                        element={guard(role === 'student' ? <MyCourses /> : <AcademicHome />)}
+                                    />
+                                    <Route
+                                        path="/academic/offerings/:id"
+                                        element={guard(
+                                            role === 'student' ? <MyCourse /> : <OfferingDetail />
+                                        )}
+                                    />
+                                    <Route
+                                        path="/academic/sessions/:id"
+                                        element={guard(
+                                            role === 'student' ? <MySession /> : <SessionAttendance />
+                                        )}
+                                    />
+                                    <Route path="/legacy-attendance" element={guard(<LegacyAttendance />)} />
+                                    <Route
+                                        path="/attendance-analytics"
+                                        element={guard(<AttendanceAnalytics />)}
+                                    />
+                                    <Route
+                                        path="/notifications"
+                                        element={guard(<Notifications />, ['student', 'teacher'])}
+                                    />
+                                    <Route path="/semester-reports" element={guard(<SemesterReports />)} />
+                                    <Route
+                                        path="/attendance-corrections"
+                                        element={guard(<CorrectionQueue />)}
+                                    />
+                                    <Route
+                                        path="/attendance-corrections/sessions/:sessionId"
+                                        element={guard(<CorrectionSession />, ['student'])}
+                                    />
+                                    <Route
+                                        path="/attendance-corrections/sessions/:sessionId/requests/:requestId"
+                                        element={guard(<CorrectionDetail />)}
+                                    />
+                                    <Route
+                                        path="*"
+                                        element={<Navigate to={isAuthenticated ? home : '/login'} replace />}
+                                    />
+                                </Routes>
+                            </Suspense>
+                        </ErrorBoundary>
+                    </main>
+                </div>
             </div>
-        </div></NotificationProvider>
+        </NotificationProvider>
     );
 };
-
 export default App;

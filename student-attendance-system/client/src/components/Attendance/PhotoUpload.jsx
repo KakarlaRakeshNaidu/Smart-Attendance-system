@@ -1,16 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import attendanceService from '../../services/attendanceService';
-import {
-    Upload,
-    X,
-    CheckCircle,
-    AlertCircle,
-    Loader,
-    User
-} from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import attendanceService from '../../services/batchAttendanceService';
+import { Upload, X, CheckCircle, AlertCircle, Loader, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChange }) => {
+const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
     const fileInputRef = useRef(null);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviewers] = useState([]);
@@ -19,16 +12,11 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
     const [markedStudents, setMarkedStudents] = useState([]);
     const [showResults, setShowResults] = useState(false);
 
-    const [errors,setErrors] = useState([]);
-    const [outcomes,setOutcomes] = useState([]);
-    const processingRef = useRef(false);
-    useEffect(() => {onBusyChange?.(loading);return () => onBusyChange?.(false);},[loading,onBusyChange]);
-
     const handleFileSelect = async (e) => {
         const files = Array.from(e.target.files);
-        
+
         // Validate files
-        const validFiles = files.filter(file => {
+        const validFiles = files.filter((file) => {
             if (!file.type.startsWith('image/')) {
                 toast.error(`${file.name} is not an image`);
                 return false;
@@ -42,13 +30,13 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
 
         if (validFiles.length === 0) return;
 
-        setSelectedFiles(prev => [...prev, ...validFiles]);
+        setSelectedFiles((prev) => [...prev, ...validFiles]);
 
         // Generate previews
         for (const file of validFiles) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                setPreviewers(prev => [...prev, event.target.result]);
+                setPreviewers((prev) => [...prev, event.target.result]);
             };
             reader.readAsDataURL(file);
         }
@@ -57,8 +45,8 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
     };
 
     const removeFile = (index) => {
-        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-        setPreviewers(prev => prev.filter((_, i) => i !== index));
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+        setPreviewers((prev) => prev.filter((_, i) => i !== index));
     };
 
     const clearAll = () => {
@@ -69,15 +57,12 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
     };
 
     const processAllPhotos = async () => {
-        if (processingRef.current) return;
-        if (!sessionId || disabledReason) {toast.error(disabledReason || 'Select a lecture session before marking attendance.');return;}
-        setErrors([]);setOutcomes([]);
         if (selectedFiles.length === 0) {
             toast.error('Please select at least one image');
             return;
         }
 
-        processingRef.current = true;setLoading(true);
+        setLoading(true);
         const allMarkedStudents = new Set(); // Use Set to avoid duplicates
         let totalPhotosProcessed = 0;
 
@@ -94,13 +79,20 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                     reader.readAsDataURL(file);
                 });
 
-                const response = await attendanceService.bulkPhotoAttendance({
+                const payload = {
                     image: imageBase64
-                }, sessionId);
+                };
+                if (selectedBatch) {
+                    payload.academicYear = selectedBatch.academicYear;
+                    payload.branch = selectedBatch.branch;
+                    payload.section = selectedBatch.section;
+                    payload.subsection = selectedBatch.subsection;
+                }
 
-                setOutcomes(prev=>[...prev,'Photo '+(i+1)+': '+(response.message || 'Recognition completed.')+(response.unrecognizedCount ? ' Unrecognised faces: '+response.unrecognizedCount : '')]);
+                const response = await attendanceService.bulkPhotoAttendance(payload);
+
                 if (response.success && response.recognized) {
-                    response.recognized.forEach(student => {
+                    response.recognized.forEach((student) => {
                         // Add to set with unique key to avoid duplicates
                         allMarkedStudents.add(JSON.stringify(student));
                     });
@@ -108,29 +100,29 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                     toast.success(`Photo ${i + 1}/${selectedFiles.length}: Processed`);
                 } else if (response.recognized) {
                     // Even if response.success is false, if students were recognized, add them
-                    response.recognized.forEach(student => {
+                    response.recognized.forEach((student) => {
                         allMarkedStudents.add(JSON.stringify(student));
                     });
                     totalPhotosProcessed++;
                     toast.success(`Photo ${i + 1}/${selectedFiles.length}: Processed`);
                 } else {
                     totalPhotosProcessed++;
-                    toast('Photo ' + (i + 1) + ': No eligible students recognised.');
+                    toast.info(`Photo ${i + 1}/${selectedFiles.length}: No new students found`);
                 }
             } catch (error) {
-                const message = 'Photo '+(i+1)+': '+(error.response?.data?.message || 'Error processing');
-                setErrors(prev=>[...prev,message]);toast.error(message);
+                totalPhotosProcessed++;
+                toast.error(`Photo ${i + 1}: Error processing`);
             }
         }
 
-        processingRef.current = false;setLoading(false);
+        setLoading(false);
         setProcessingIndex(null);
-        
+
         // Convert Set back to array and remove duplicates by studentId
         const uniqueStudents = Array.from(allMarkedStudents)
-            .map(s => JSON.parse(s))
+            .map((s) => JSON.parse(s))
             .reduce((acc, student) => {
-                const exists = acc.find(s => s.studentId === student.studentId);
+                const exists = acc.find((s) => s.studentId === student.studentId);
                 if (!exists) {
                     acc.push(student);
                 }
@@ -138,7 +130,7 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
             }, []);
 
         setMarkedStudents(uniqueStudents);
-        setShowResults(totalPhotosProcessed > 0);
+        setShowResults(true);
 
         if (onAttendanceMarked) {
             onAttendanceMarked();
@@ -151,13 +143,30 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
     };
 
     return (
-        <div className="space-y-6 py-8">
-            {(!sessionId || disabledReason) && <p className="text-amber-300">{disabledReason || 'Select a lecture session before marking attendance.'}</p>}
-            {outcomes.map((message,i) => <p className="text-zinc-300" key={i}>{message}</p>)}
-            {errors.map((message,i) => <p role="alert" className="text-red-300" key={i}>{message}</p>)}
+        <div className="space-y-6 py-4">
+            {/* Active Scoped Batch Indicator */}
+            {selectedBatch ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-xs">
+                    <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
+                        <span className="font-semibold text-blue-200">
+                            Biometric Scope: {selectedBatch.branch} Year {selectedBatch.academicYear} — Sec{' '}
+                            {selectedBatch.section} ({selectedBatch.subsection})
+                        </span>
+                    </div>
+                    <span className="text-[11px] text-zinc-400">
+                        Photos matched strictly against students in this batch
+                    </span>
+                </div>
+            ) : (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
+                    ⚠️ Please select an authorized batch above before uploading photos.
+                </div>
+            )}
+
             {/* File Upload Section */}
             <div
-                className="relative cursor-pointer rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/30 p-8 text-center transition-all hover:border-green-500 hover:bg-zinc-900/50"
+                className="relative cursor-pointer rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/30 p-8 text-center transition-all hover:border-blue-500 hover:bg-zinc-900/50"
                 onClick={() => fileInputRef.current?.click()}
             >
                 <input
@@ -169,12 +178,8 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                     className="hidden"
                 />
                 <Upload className="mx-auto mb-3 h-12 w-12 text-green-400" />
-                <h3 className="mb-2 text-lg font-semibold text-zinc-100">
-                    Click to upload classroom photos
-                </h3>
-                <p className="text-sm text-zinc-400">
-                    Supports JPG, PNG, WEBP • Max 10MB per image
-                </p>
+                <h3 className="mb-2 text-lg font-semibold text-zinc-100">Click to upload classroom photos</h3>
+                <p className="text-sm text-zinc-400">Supports JPG, PNG, WEBP • Max 10MB per image</p>
             </div>
 
             {/* Selected Files Preview */}
@@ -196,7 +201,10 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                     {/* Image Previews Grid */}
                     <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                         {previews.map((preview, index) => (
-                            <div key={index} className="group relative overflow-hidden rounded-lg bg-zinc-800">
+                            <div
+                                key={index}
+                                className="group relative overflow-hidden rounded-lg bg-zinc-800"
+                            >
                                 <img
                                     src={preview}
                                     alt={`Preview ${index + 1}`}
@@ -214,7 +222,7 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                                         disabled={loading}
                                         className="rounded-full bg-red-500 p-2 hover:bg-red-600 disabled:opacity-50"
                                     >
-                                        <X className="h-5 w-5 text-media" />
+                                        <X className="h-5 w-5 text-white" />
                                     </button>
                                 </div>
                                 {processingIndex === index && (
@@ -229,8 +237,8 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
                     {/* Process Button */}
                     <button
                         onClick={processAllPhotos}
-                        disabled={loading || selectedFiles.length === 0 || !sessionId || !!disabledReason}
-                        className="w-full rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 font-semibold text-ink transition-all hover:from-green-400 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        disabled={loading || selectedFiles.length === 0}
+                        className="w-full rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 font-semibold text-zinc-950 transition-all hover:from-green-400 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {loading ? (
                             <>
@@ -249,7 +257,10 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
 
             {/* Results Section - Only Marked Students */}
             {showResults && markedStudents.length > 0 && (
-                <div id="results-section" className="rounded-2xl border border-green-900/30 bg-green-950/20 p-6">
+                <div
+                    id="results-section"
+                    className="rounded-2xl border border-green-900/30 bg-green-950/20 p-6"
+                >
                     <div className="mb-6">
                         <div className="mb-4 flex items-center gap-2">
                             <CheckCircle className="h-6 w-6 text-green-400" />
@@ -285,7 +296,10 @@ const PhotoUpload = ({ onAttendanceMarked, sessionId, disabledReason, onBusyChan
             )}
 
             {showResults && markedStudents.length === 0 && (
-                <div id="results-section" className="rounded-2xl border border-green-900/30 bg-green-950/20 p-6 text-center">
+                <div
+                    id="results-section"
+                    className="rounded-2xl border border-green-900/30 bg-green-950/20 p-6 text-center"
+                >
                     <AlertCircle className="mx-auto mb-3 h-8 w-8 text-green-400" />
                     <p className="text-green-300">No students recognized in the photos</p>
                 </div>

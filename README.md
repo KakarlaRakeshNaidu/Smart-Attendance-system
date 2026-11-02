@@ -4,6 +4,25 @@ A React, Express and Python application for course-based attendance with face re
 
 ## Features
 
+### Landing Page and Unified Portals
+
+- Public landing page, responsive institutional sign-in, password visibility and login assistance.
+- Dedicated administrator, teacher and student dashboards with a shared responsive sidebar.
+- Remembered workstation sessions or temporary tab-only sessions, plus direct sign-out.
+- Teacher batch dashboards and directories grouped by academic year, branch, section and subsection.
+- Admin student and teacher editing, password reset, archive/restore and deletion of unused profiles. Profiles with academic history must be archived.
+- Academic batch grants with server-enforced roster and biometric scope, plus administrative audit history.
+- Class, subject, enrollment and teacher-assignment screens connect to the same academic records as the lecture workflow.
+- Student subject attendance, visual reports, monthly breakdowns, recovery guidance and safe CSV export.
+- Attendance minimums are shared by subjects in an academic term; they are attendance targets, not exam eligibility decisions.
+
+### Batch Attendance
+
+Administrators grant a teacher academic batch access from **Teachers → Manage access** and assign students their year, branch, section and subsection. The teacher selects the batch on **Attendance**, then uses live video, classroom photos or manual present/late/absent controls. Unmarked students remain **Not marked** until the teacher explicitly finalises the session.
+
+Batch sessions use the same MongoDB lecture, course-offering and historical-roster models as scheduled lectures. Finalised batch marks therefore appear in student summaries, analytics, notifications, correction queues and semester reports. Use **Lecture attendance** for multiple scheduled lectures on the same day.
+
+
 ### Accounts and Portals
 
 | Role | Features |
@@ -116,7 +135,7 @@ npm run dev
 
 | Service | Local URL |
 |---------|-----------|
-| Frontend | http://localhost:5173/login |
+| Frontend | http://localhost:5173/ |
 | Express API | http://localhost:5000/api |
 | Face service | http://localhost:5001/api |
 
@@ -133,8 +152,8 @@ The face service extracts embeddings through the remote HuggingFace model and ma
 | `FACE_API_URL` | Face-service URL; default `http://localhost:5001/api` |
 | `FRONTEND_URL` | Additional allowed frontend origin |
 | `HF_TOKEN` | Remote HuggingFace authentication when required |
-| `VITE_API_URL` | Frontend API URL; default `http://localhost:5000/api` |
-| `VITE_API_BASE_URL` | Backend origin for photo URLs; default `http://localhost:5000` |
+| `VITE_API_URL` | Frontend API URL; default `/api` through the frontend proxy |
+| `VITE_API_BASE_URL` | Backend origin for photo URLs; local API in development and the current origin in production |
 
 Set server variables before starting the services and Vite variables before starting or building the frontend. The Python service listens on port `5001`.
 
@@ -288,6 +307,24 @@ Protected routes enforce the authenticated Account's role and record access.
 | `/api/notifications` | Own notifications, unread counts and read controls |
 | `/api/corrections` | Correction requests, review queues and decisions |
 | `/api/reports` | Semester preview, filter options and CSV export |
+
+## Containers and Hosting
+
+The repository includes MongoDB-based Docker Compose services for the database, Express API, Python face service and an Nginx-served frontend. MongoDB data and uploaded images use named volumes.
+
+```bash
+cp .env.docker.example .env.docker
+# Set JWT_SECRET to a private random value; set HF_TOKEN if the remote model requires it.
+docker compose --env-file .env.docker up --build
+```
+
+Open `http://localhost:8080`. The frontend proxies `/api` and `/uploads` to Express; the database and face service stay on the internal container network. Create the first administrator with the existing interactive account-management script:
+
+```bash
+docker compose exec backend node scripts/create-admin.js
+```
+
+The script prompts for the administrator name, email and password. The Render blueprint and frontend/backend Vercel routing files are also retained. Configure MongoDB, allowed frontend origin and the separately hosted Python face service for those deployments. Durable notification reconciliation should run on a persistent API process or through the existing reconciliation command; serverless invocations do not run a continuous background worker. Serverless upload storage also requires persistent external storage for production use.
 
 ## License
 

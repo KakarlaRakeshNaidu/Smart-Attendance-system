@@ -1,19 +1,19 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { User, Mail, BookOpen, Trash2, Camera, X, Check, Scan, ImagePlus } from 'lucide-react';
 import studentService from '../../services/studentService';
 import toast from 'react-hot-toast';
 
 const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
-    const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const BASE_URL =
+        import.meta.env.VITE_API_BASE_URL ||
+        (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
     const [showFaceCapture, setShowFaceCapture] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
     const [capturing, setCapturing] = useState(false);
-    const streamRef = useRef(null), mountedRef = useRef(false);
-    useEffect(()=>{mountedRef.current=true;return ()=>{mountedRef.current=false;streamRef.current?.getTracks().forEach(track=>track.stop());};},[]);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    const hasFaceRegistered = student.faceRegistered === true;
+    const hasFaceRegistered = student.faceRegistered;
     const needsProfilePhoto = hasFaceRegistered && !student.profilePhoto;
 
     const startCamera = useCallback(async () => {
@@ -21,8 +21,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
             });
-            if (!mountedRef.current) {stream.getTracks().forEach(track=>track.stop());return;}
-            streamRef.current=stream;setCameraStream(stream);
+            setCameraStream(stream);
             setShowFaceCapture(true);
 
             // Wait for next tick to ensure video element is rendered
@@ -39,10 +38,10 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
 
     const stopCamera = useCallback(() => {
         if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream.getTracks().forEach((track) => track.stop());
             setCameraStream(null);
         }
-        streamRef.current=null;setShowFaceCapture(false);
+        setShowFaceCapture(false);
     }, [cameraStream]);
 
     const captureFace = useCallback(async () => {
@@ -161,8 +160,8 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                             )}
                         </div>
                         {hasFaceRegistered && (
-                                <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600">
-                                <Scan className="h-2.5 w-2.5 text-media" />
+                            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500">
+                                <Scan className="h-2.5 w-2.5 text-white" />
                             </div>
                         )}
                     </div>
@@ -182,7 +181,10 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                             >
                                 <Camera className="h-4 w-4" />
                             </button>
-                            <label className={`cursor-pointer rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-700 hover:text-emerald-300 ${capturing ? 'pointer-events-none opacity-50' : ''}`} title="Upload Face Image">
+                            <label
+                                className={`cursor-pointer rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-700 hover:text-emerald-300 ${capturing ? 'pointer-events-none opacity-50' : ''}`}
+                                title="Upload Face Image"
+                            >
                                 <ImagePlus className="h-4 w-4" />
                                 <input
                                     type="file"
@@ -195,7 +197,10 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                         </>
                     )}
                     {needsProfilePhoto && (
-                        <label className={`cursor-pointer rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-700 hover:text-amber-300 ${capturing ? 'pointer-events-none opacity-50' : ''}`} title="Add Profile Photo">
+                        <label
+                            className={`cursor-pointer rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-700 hover:text-amber-300 ${capturing ? 'pointer-events-none opacity-50' : ''}`}
+                            title="Add Profile Photo"
+                        >
                             <ImagePlus className="h-4 w-4" />
                             <input
                                 type="file"
@@ -225,7 +230,8 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                 {(student.class || student.section) && (
                     <div className="flex items-center text-sm text-zinc-300">
                         <BookOpen className="mr-2 h-4 w-4 text-zinc-500" />
-                        {student.class}{student.section && ` - Section ${student.section}`}
+                        {student.class}
+                        {student.section && ` - Section ${student.section}`}
                     </div>
                 )}
                 {!hasFaceRegistered && (
@@ -240,7 +246,9 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
                     <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-zinc-100">Register Face - {student.name}</h3>
+                            <h3 className="text-lg font-semibold text-zinc-100">
+                                Register Face - {student.name}
+                            </h3>
                             <button onClick={stopCamera} className="text-zinc-500 hover:text-zinc-300">
                                 <X className="h-5 w-5" />
                             </button>
@@ -259,10 +267,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                         <canvas ref={canvasRef} className="hidden" />
 
                         <div className="flex gap-3">
-                            <button
-                                onClick={stopCamera}
-                                className="btn-secondary flex-1"
-                            >
+                            <button onClick={stopCamera} className="btn-secondary flex-1">
                                 Cancel
                             </button>
                             <button
