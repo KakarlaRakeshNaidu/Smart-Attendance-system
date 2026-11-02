@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Dialog } from '../common/Interface';
 import studentService from '../../services/studentService';
 import api from '../../services/api';
 import { useAuth } from '../../context/authContextState';
@@ -206,7 +207,7 @@ const StudentList = () => {
         const hasAccess = checkBatchAccess(block, section, subsection);
         if (!hasAccess) {
             toast.error(
-                `🔒 Batch ${subsection} is locked. You do not have access permission from Administration.`
+                ` Batch ${subsection} is locked. You do not have access permission from Administration.`
             );
             return;
         }
@@ -249,7 +250,7 @@ const StudentList = () => {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-title">Students Directory</h1>
+                    <h1 className="text-title text-title">Student directory</h1>
                     <p className="text-subtext">
                         {activeBatch
                             ? `Showing students enrolled in Batch ${activeBatch.subsection}`
@@ -269,18 +270,15 @@ const StudentList = () => {
 
             {/* Scope Notice Banner */}
             {user?.role === 'teacher' && !activeBatch && (
-                <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
+                <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
                     <div className="flex items-start gap-3">
                         <ShieldCheck className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                         <div className="text-xs sm:text-sm text-blue-200/90 leading-relaxed">
-                            <span className="font-semibold text-white">
-                                Administration-Allocated Student Groups:
-                            </span>{' '}
-                            Batches assigned to you by college administration are{' '}
-                            <span className="font-semibold text-emerald-400">UNLOCKED</span>. Batches not
-                            allocated to you are{' '}
-                            <span className="font-semibold text-zinc-400">LOCKED 🔒</span>. Click any unlocked
-                            batch to inspect its students.
+                            <span className="font-medium text-white">Assigned batches:</span> You can open
+                            batches assigned by your administrator. Assigned batches are{' '}
+                            <span className="font-medium text-emerald-400">Assigned</span>. Other batches are{' '}
+                            <span className="font-medium text-zinc-400">Not assigned </span>. Click any
+                            unlocked batch to inspect its students.
                         </div>
                     </div>
                 </div>
@@ -292,17 +290,17 @@ const StudentList = () => {
             {activeBatch ? (
                 <div className="space-y-4">
                     {/* Active Batch Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4 backdrop-blur">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/90 p-4 ">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setActiveBatch(null)}
-                                className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700 hover:text-white"
+                                className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 hover:text-white"
                             >
-                                <ArrowLeft className="h-3.5 w-3.5" />
-                                All Batches
+                                <ArrowLeft className="h-4 w-4" />
+                                All batches
                             </button>
                             <div>
-                                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                                <h2 className="text-base font-medium text-white flex items-center gap-2">
                                     <span>
                                         {activeBatch.branch} — {formatAcademicYear(activeBatch.academicYear)}
                                     </span>
@@ -338,7 +336,7 @@ const StudentList = () => {
                         ) : activeBatchStudents.length > 0 ? (
                             <>
                                 {/* Desktop Table */}
-                                <div className="hidden md:block overflow-x-auto rounded-2xl border border-zinc-800">
+                                <div className="hidden md:block overflow-x-auto rounded-xl border border-zinc-800">
                                     <table className="w-full min-w-[600px]">
                                         <thead>
                                             <tr className="border-b border-zinc-800 bg-zinc-900/70">
@@ -352,7 +350,7 @@ const StudentList = () => {
                                                 ].map((col) => (
                                                     <th
                                                         key={col}
-                                                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500"
+                                                        className="px-4 py-3 text-left text-xs font-medium   text-zinc-500"
                                                     >
                                                         {col}
                                                     </th>
@@ -367,7 +365,7 @@ const StudentList = () => {
                                                 return (
                                                     <tr
                                                         key={studentKey}
-                                                        className={`${index % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-950/40'} border-b border-zinc-800 transition-all duration-200 hover:bg-zinc-800/70`}
+                                                        className={`${index % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-950/40'} border-b border-zinc-800 transition-colors duration-200 hover:bg-zinc-800/70`}
                                                     >
                                                         <td className="px-4 py-3">
                                                             <div className="h-10 w-10 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800">
@@ -378,7 +376,7 @@ const StudentList = () => {
                                                                         className="h-full w-full object-cover"
                                                                     />
                                                                 ) : (
-                                                                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-zinc-300">
+                                                                    <div className="flex h-full w-full items-center justify-center text-sm font-medium text-zinc-300">
                                                                         {student.name?.charAt(0) || 'S'}
                                                                     </div>
                                                                 )}
@@ -394,14 +392,14 @@ const StudentList = () => {
                                                             {student.email || '—'}
                                                         </td>
                                                         <td className="px-4 py-3 text-sm text-zinc-300">
-                                                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 px-2.5 py-1 text-xs text-zinc-200 border border-zinc-700">
-                                                                <span className="font-semibold text-white">
+                                                            <span className="inline-flex items-center gap-2 rounded-lg bg-zinc-800/90 px-2.5 py-1 text-xs text-zinc-200 border border-zinc-700">
+                                                                <span className="font-medium text-white">
                                                                     Y{student.academicYear || 1}
                                                                 </span>
                                                                 <span className="text-zinc-500">•</span>
                                                                 <span>{student.branch || 'CSE'}</span>
                                                                 <span className="text-zinc-500">-</span>
-                                                                <span className="font-mono text-blue-300 font-semibold">
+                                                                <span className="font-mono text-blue-300 font-medium">
                                                                     {student.subsection || 'A1'}
                                                                 </span>
                                                             </span>
@@ -420,10 +418,10 @@ const StudentList = () => {
                                                         <td className="px-4 py-3">
                                                             <button
                                                                 onClick={() => setSelectedStudent(student)}
-                                                                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 transition-colors shadow-sm"
+                                                                className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-700 transition-colors shadow-sm"
                                                             >
-                                                                <Info className="h-3.5 w-3.5 text-blue-400" />
-                                                                Show Info
+                                                                <Info className="h-4 w-4 text-blue-400" />
+                                                                Show info
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -441,7 +439,7 @@ const StudentList = () => {
                                         return (
                                             <div
                                                 key={studentKey}
-                                                className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+                                                className="rounded-xl border border-zinc-800 bg-zinc-900 p-4"
                                             >
                                                 <div className="flex items-center justify-between gap-3">
                                                     <div className="flex items-center gap-3 min-w-0">
@@ -453,13 +451,13 @@ const StudentList = () => {
                                                                     className="h-full w-full object-cover"
                                                                 />
                                                             ) : (
-                                                                <div className="flex h-full w-full items-center justify-center text-sm font-bold text-zinc-300">
+                                                                <div className="flex h-full w-full items-center justify-center text-sm font-medium text-zinc-300">
                                                                     {student.name?.charAt(0) || 'S'}
                                                                 </div>
                                                             )}
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="font-semibold text-zinc-100 truncate">
+                                                            <p className="font-medium text-zinc-100 truncate">
                                                                 {student.name}
                                                             </p>
                                                             <p className="text-xs text-zinc-400 font-mono truncate">
@@ -474,9 +472,9 @@ const StudentList = () => {
                                                     </div>
                                                     <button
                                                         onClick={() => setSelectedStudent(student)}
-                                                        className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 transition-colors flex-shrink-0"
+                                                        className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-700 transition-colors flex-shrink-0"
                                                     >
-                                                        <Info className="h-3.5 w-3.5 text-blue-400" />
+                                                        <Info className="h-4 w-4 text-blue-400" />
                                                         Info
                                                     </button>
                                                 </div>
@@ -488,7 +486,7 @@ const StudentList = () => {
                         ) : (
                             <div className="py-12 text-center">
                                 <Users className="mx-auto mb-3 h-12 w-12 text-zinc-600" />
-                                <p className="text-base font-semibold text-zinc-300">
+                                <p className="text-base font-medium text-zinc-300">
                                     No students found in Batch {activeBatch.subsection}
                                 </p>
                                 <p className="text-xs text-zinc-500 mt-1">
@@ -522,7 +520,7 @@ const StudentList = () => {
                             return (
                                 <Card
                                     key={`${block.branch}-${block.academicYear}`}
-                                    className="overflow-hidden border-zinc-800 bg-zinc-900/90 p-5 sm:p-6 backdrop-blur"
+                                    className="overflow-hidden border-zinc-800 bg-zinc-900/90 p-5 sm:p-6 "
                                 >
                                     {/* Block Header */}
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-800/80 pb-4 mb-5">
@@ -531,7 +529,7 @@ const StudentList = () => {
                                                 <GraduationCap className="h-6 w-6" />
                                             </div>
                                             <div>
-                                                <h2 className="text-lg font-bold text-white tracking-tight">
+                                                <h2 className="text-lg font-medium text-white ">
                                                     {block.title}
                                                 </h2>
                                                 <p className="text-xs text-zinc-400">
@@ -542,10 +540,10 @@ const StudentList = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300">
+                                            <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
                                                 <Unlock className="h-3 w-3 text-emerald-400" />
                                                 {totalAccessibleInBlock} /{' '}
-                                                {SECTIONS.length * SUB_INDICES.length} Batches Unlocked
+                                                {SECTIONS.length * SUB_INDICES.length} Batches unlocked
                                             </span>
                                         </div>
                                     </div>
@@ -555,11 +553,11 @@ const StudentList = () => {
                                         {SECTIONS.map((sec) => (
                                             <div
                                                 key={sec}
-                                                className="rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-3.5 space-y-2.5"
+                                                className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-3.5 space-y-2.5"
                                             >
                                                 <div className="flex items-center justify-between border-b border-zinc-800/60 pb-2">
-                                                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                                                        <Layers className="h-3.5 w-3.5 text-blue-400" />
+                                                    <span className="text-xs font-medium   text-zinc-400 flex items-center gap-2">
+                                                        <Layers className="h-4 w-4 text-blue-400" />
                                                         Section {sec}
                                                     </span>
                                                     {checkBatchAccess(block, sec, 'ALL') ? (
@@ -568,14 +566,14 @@ const StudentList = () => {
                                                             onClick={() =>
                                                                 handleBatchClick(block, sec, 'ALL')
                                                             }
-                                                            className="inline-flex items-center gap-1 rounded-md bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 px-2 py-0.5 text-[10px] font-semibold text-blue-300 transition-colors shadow-sm cursor-pointer"
+                                                            className="inline-flex items-center gap-1 rounded-md bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 px-2 py-0.5 text-xs font-medium text-blue-300 transition-colors shadow-sm cursor-pointer"
                                                             title={`View all students in Section ${sec}`}
                                                         >
                                                             <Unlock className="h-2.5 w-2.5 text-emerald-400" />
-                                                            All Section {sec}
+                                                            All section {sec}
                                                         </button>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] text-zinc-500 font-medium">
+                                                        <span className="inline-flex items-center gap-1 text-xs text-zinc-500 font-medium">
                                                             <Lock className="h-3 w-3 text-zinc-500" />
                                                         </span>
                                                     )}
@@ -611,24 +609,24 @@ const StudentList = () => {
                                                                         subsectionName
                                                                     )
                                                                 }
-                                                                className={`group relative flex flex-col items-center justify-center rounded-xl p-3 text-center transition-all duration-200 border ${
+                                                                className={`group relative flex flex-col items-center justify-center rounded-xl p-3 text-center transition-colors duration-200 border ${
                                                                     isUnlocked
                                                                         ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/60 hover:bg-emerald-500/20 shadow-sm cursor-pointer'
                                                                         : 'border-zinc-800 bg-zinc-900/40 text-zinc-600 opacity-50 cursor-not-allowed hover:bg-zinc-900/60'
                                                                 }`}
                                                             >
                                                                 <div className="flex items-center justify-between w-full mb-1">
-                                                                    <span className="text-xs font-mono font-bold text-white">
+                                                                    <span className="text-xs font-mono font-medium text-white">
                                                                         {subsectionName}
                                                                     </span>
                                                                     {isUnlocked ? (
-                                                                        <Unlock className="h-3.5 w-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                                                        <Unlock className="h-4 w-4 text-emerald-400 group- transition-transform" />
                                                                     ) : (
-                                                                        <Lock className="h-3.5 w-3.5 text-zinc-500" />
+                                                                        <Lock className="h-4 w-4 text-zinc-500" />
                                                                     )}
                                                                 </div>
 
-                                                                <span className="text-[10px] font-medium text-zinc-400">
+                                                                <span className="text-xs font-medium text-zinc-400">
                                                                     {isUnlocked
                                                                         ? `${batchStudentsCount} Student${batchStudentsCount === 1 ? '' : 's'}`
                                                                         : 'Locked'}
@@ -644,9 +642,9 @@ const StudentList = () => {
                             );
                         })
                     ) : (
-                        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 text-center">
+                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-8 text-center">
                             <ShieldAlert className="mx-auto mb-3 h-12 w-12 text-amber-400" />
-                            <h3 className="text-base font-bold text-white">No Student Batches Assigned</h3>
+                            <h3 className="text-base font-medium text-white">No student batches assigned</h3>
                             <p className="mt-1 text-xs text-amber-300/80 max-w-md mx-auto">
                                 The college administration has not assigned you access to any department
                                 batches yet. Please contact the administrator to allocate classes to your
@@ -659,155 +657,131 @@ const StudentList = () => {
 
             {/* ===== STUDENT INFO MODAL (Properly centered & constrained to viewport) ===== */}
             {selectedStudent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto py-6 sm:py-8">
-                    <div className="relative w-full max-w-lg my-auto max-h-[85vh] flex flex-col rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                        {/* Header (fixed at top of modal) */}
-                        <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4 bg-zinc-950/80 flex-shrink-0">
-                            <div className="flex items-center gap-2">
-                                <User className="h-5 w-5 text-blue-400" />
-                                <h3 className="font-semibold text-white">Student Information</h3>
-                            </div>
-                            <button
-                                onClick={() => setSelectedStudent(null)}
-                                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        {/* Body (scrollable within modal) */}
-                        <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
-                            {/* Profile Card */}
-                            <div className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-800/40 p-4">
-                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-800">
-                                    {getProfileUrl(selectedStudent) ? (
-                                        <img
-                                            src={getProfileUrl(selectedStudent)}
-                                            alt={selectedStudent.name}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="flex h-full w-full items-center justify-center text-xl font-bold text-zinc-300">
-                                            {selectedStudent.name?.charAt(0) || 'S'}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="text-lg font-bold text-white truncate">
-                                        {selectedStudent.name}
-                                    </h4>
-                                    <p className="text-xs font-mono text-zinc-400">
-                                        Roll No: {selectedStudent.studentId}
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                                        <span
-                                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                                selectedStudent.status === 'active'
-                                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                    : 'bg-zinc-700 text-zinc-300'
-                                            }`}
-                                        >
-                                            {selectedStudent.status === 'active'
-                                                ? 'Active'
-                                                : selectedStudent.status}
-                                        </span>
-
-                                        {selectedStudent.faceRegistered ? (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-500/20">
-                                                <Scan className="h-3 w-3" /> Face Registered
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400 border border-amber-500/20">
-                                                <Camera className="h-3 w-3" /> Face Not Registered
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Details Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {/* Academic Year */}
-                                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
-                                    <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
-                                        <GraduationCap className="h-4 w-4 text-blue-400" />
-                                        <span>Academic Year</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-white">
-                                        {formatAcademicYear(selectedStudent.academicYear)}
-                                    </p>
-                                </div>
-
-                                {/* Branch */}
-                                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
-                                    <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
-                                        <GitBranch className="h-4 w-4 text-purple-400" />
-                                        <span>Branch</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-white">
-                                        {selectedStudent.branch || 'CSE'}
-                                    </p>
-                                </div>
-
-                                {/* Section */}
-                                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
-                                    <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
-                                        <Layers className="h-4 w-4 text-emerald-400" />
-                                        <span>Section</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-white">
-                                        Section {selectedStudent.section || 'A'}
-                                    </p>
-                                </div>
-
-                                {/* Subsection */}
-                                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
-                                    <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
-                                        <Grid className="h-4 w-4 text-amber-400" />
-                                        <span>Subsection</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-white font-mono">
-                                        {selectedStudent.subsection || '–'}
-                                    </p>
-                                </div>
-
-                                {/* Email */}
-                                <div className="sm:col-span-2 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
-                                    <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
-                                        <Mail className="h-4 w-4 text-zinc-400" />
-                                        <span>Email Address</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-white break-all">
-                                        {selectedStudent.email || 'Not provided'}
-                                    </p>
-                                </div>
-
-                                {/* Assigned Class / Batch */}
-                                {selectedStudent.class && (
-                                    <div className="sm:col-span-2 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
-                                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
-                                            <BookOpen className="h-4 w-4 text-zinc-400" />
-                                            <span>Class / Batch</span>
-                                        </div>
-                                        <p className="text-sm font-semibold text-white">
-                                            {selectedStudent.class}
-                                        </p>
+                <Dialog title="Student information" onClose={() => setSelectedStudent(null)}>
+                    <div className="space-y-4">
+                        {/* Profile Card */}
+                        <div className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-800/40 p-4">
+                            <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800">
+                                {getProfileUrl(selectedStudent) ? (
+                                    <img
+                                        src={getProfileUrl(selectedStudent)}
+                                        alt={selectedStudent.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-xl font-medium text-zinc-300">
+                                        {selectedStudent.name?.charAt(0) || 'S'}
                                     </div>
                                 )}
                             </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-lg font-medium text-white truncate">
+                                    {selectedStudent.name}
+                                </h4>
+                                <p className="text-xs font-mono text-zinc-400">
+                                    Roll No: {selectedStudent.studentId}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    <span
+                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                            selectedStudent.status === 'active'
+                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                : 'bg-zinc-700 text-zinc-300'
+                                        }`}
+                                    >
+                                        {selectedStudent.status === 'active'
+                                            ? 'Active'
+                                            : selectedStudent.status}
+                                    </span>
+
+                                    {selectedStudent.faceRegistered ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-500/20">
+                                            <Scan className="h-3 w-3" /> Face registered
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400 border border-amber-500/20">
+                                            <Camera className="h-3 w-3" /> Face not registered
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Footer (fixed at bottom of modal) */}
-                        <div className="border-t border-zinc-800 px-5 py-3.5 bg-zinc-950/80 flex justify-end flex-shrink-0">
-                            <button
-                                onClick={() => setSelectedStudent(null)}
-                                className="rounded-xl bg-zinc-800 px-4 py-2 text-xs font-medium text-white hover:bg-zinc-700 transition-colors"
-                            >
-                                Close
-                            </button>
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Academic Year */}
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                                <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
+                                    <GraduationCap className="h-4 w-4 text-blue-400" />
+                                    <span>Academic year</span>
+                                </div>
+                                <p className="text-sm font-medium text-white">
+                                    {formatAcademicYear(selectedStudent.academicYear)}
+                                </p>
+                            </div>
+
+                            {/* Branch */}
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                                <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
+                                    <GitBranch className="h-4 w-4 text-purple-400" />
+                                    <span>Branch</span>
+                                </div>
+                                <p className="text-sm font-medium text-white">
+                                    {selectedStudent.branch || 'CSE'}
+                                </p>
+                            </div>
+
+                            {/* Section */}
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                                <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
+                                    <Layers className="h-4 w-4 text-emerald-400" />
+                                    <span>Section</span>
+                                </div>
+                                <p className="text-sm font-medium text-white">
+                                    Section {selectedStudent.section || 'A'}
+                                </p>
+                            </div>
+
+                            {/* Subsection */}
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                                <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
+                                    <Grid className="h-4 w-4 text-amber-400" />
+                                    <span>Subsection</span>
+                                </div>
+                                <p className="text-sm font-medium text-white font-mono">
+                                    {selectedStudent.subsection || '–'}
+                                </p>
+                            </div>
+
+                            {/* Email */}
+                            <div className="sm:col-span-2 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                                <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
+                                    <Mail className="h-4 w-4 text-zinc-400" />
+                                    <span>Email address</span>
+                                </div>
+                                <p className="text-sm font-medium text-white break-all">
+                                    {selectedStudent.email || 'Not provided'}
+                                </p>
+                            </div>
+
+                            {/* Assigned Class / Batch */}
+                            {selectedStudent.class && (
+                                <div className="sm:col-span-2 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                                    <div className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1">
+                                        <BookOpen className="h-4 w-4 text-zinc-400" />
+                                        <span>Class / batch</span>
+                                    </div>
+                                    <p className="text-sm font-medium text-white">{selectedStudent.class}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
+                    <div className="dialog-actions">
+                        <button className="btn-secondary" onClick={() => setSelectedStudent(null)}>
+                            Close
+                        </button>
+                    </div>
+                </Dialog>
             )}
         </div>
     );

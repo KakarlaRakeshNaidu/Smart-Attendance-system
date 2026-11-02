@@ -1,215 +1,247 @@
-import React from 'react';
-import { NotificationLink } from '../Notifications/notificationState';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/authContextState';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
     Users,
     ClipboardCheck,
-    User,
-    ChevronRight,
     GraduationCap,
-    X,
     BarChart3,
     ShieldCheck,
     UserCheck,
-    CalendarCheck
+    CalendarDays,
+    BookOpen,
+    FileText,
+    History,
+    Settings,
+    User,
+    LogOut,
+    X
 } from 'lucide-react';
-
-// ── Navigation definitions per role ──────────────────────────────────────────
-
-const adminLinks = [
-    { to: '/admin/classes', label: 'Classes', icon: GraduationCap },
-    { to: '/admin/subjects', label: 'Subjects', icon: GraduationCap },
-    { to: '/admin/enrollments', label: 'Enrollments', icon: Users },
-    { to: '/admin/assignments', label: 'Assignments', icon: UserCheck },
-    { to: '/admin/accounts', label: 'Accounts & activation', icon: ShieldCheck },
-    { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/admin/teachers', label: 'Teachers', icon: UserCheck },
-    { to: '/admin/students', label: 'Students', icon: Users },
-    { to: '/admin/attendance', label: 'Attendance', icon: CalendarCheck },
-    { to: '/admin/audit-logs', label: 'Audit Logs', icon: ShieldCheck }
-];
-
-const teacherLinks = [
-    { to: '/lecture-attendance', label: 'Lecture attendance', icon: ClipboardCheck },
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/students', label: 'Students', icon: Users },
-    { to: '/attendance', label: 'Attendance', icon: ClipboardCheck }
-];
-
-const studentLinks = [
-    { to: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/student/attendance', label: 'My Attendance', icon: CalendarCheck },
-    { to: '/student/reports', label: 'Reports', icon: BarChart3 }
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-const Sidebar = ({ isOpen, onClose }) => {
-    const { isAuthenticated, role, user, logout } = useAuth();
-    const location = useLocation();
-
-    if (!isAuthenticated) return null;
-
-    const links = role === 'admin' ? adminLinks : role === 'student' ? studentLinks : teacherLinks;
-    const allLinks = [
-        ...links,
+import { useAuth } from '../../context/authContextState';
+import { NotificationLink } from '../Notifications/notificationState';
+const entry = (to, label, icon) => ({ to, label, icon });
+const groups = {
+    admin: [
         {
-            to: '/academic',
-            label: role === 'admin' ? 'Academic management' : 'Courses & lectures',
-            icon: GraduationCap
+            label: 'Workspace',
+            items: [
+                entry('/admin/dashboard', 'Overview', LayoutDashboard),
+                entry('/admin/attendance', 'Attendance', ClipboardCheck),
+                entry('/attendance-analytics', 'Analytics', BarChart3)
+            ]
         },
-        { to: '/attendance-analytics', label: 'Attendance analytics', icon: BarChart3 },
-        { to: '/attendance-corrections', label: 'Corrections', icon: ClipboardCheck },
-        { to: '/semester-reports', label: 'Semester reports', icon: BarChart3 },
-        { to: '/legacy-attendance', label: 'Legacy attendance', icon: CalendarCheck }
-    ];
-
-    const profilePath =
+        {
+            label: 'People',
+            items: [
+                entry('/admin/students', 'Students', Users),
+                entry('/admin/teachers', 'Teachers', UserCheck),
+                entry('/admin/accounts', 'Accounts & activation', ShieldCheck)
+            ]
+        },
+        {
+            label: 'Academics',
+            items: [
+                entry('/admin/classes', 'Classes', GraduationCap),
+                entry('/admin/subjects', 'Subjects', BookOpen),
+                entry('/admin/enrollments', 'Enrollments', Users),
+                entry('/admin/assignments', 'Teacher assignments', CalendarDays),
+                entry('/academic', 'Academic management', BookOpen)
+            ]
+        },
+        {
+            label: 'Records',
+            items: [
+                entry('/attendance-corrections', 'Corrections', ClipboardCheck),
+                entry('/semester-reports', 'Semester reports', FileText),
+                entry('/legacy-attendance', 'Legacy attendance', History),
+                entry('/admin/audit-logs', 'Audit logs', ShieldCheck)
+            ]
+        }
+    ],
+    teacher: [
+        {
+            label: 'Workspace',
+            items: [
+                entry('/dashboard', 'Overview', LayoutDashboard),
+                entry('/attendance', 'Batch attendance', ClipboardCheck),
+                entry('/lecture-attendance', 'Lecture attendance', CalendarDays),
+                entry('/students', 'Student directory', Users)
+            ]
+        },
+        {
+            label: 'Teaching',
+            items: [
+                entry('/academic', 'Courses & lectures', BookOpen),
+                entry('/attendance-analytics', 'Analytics', BarChart3),
+                entry('/attendance-corrections', 'Corrections', ClipboardCheck)
+            ]
+        },
+        {
+            label: 'Records',
+            items: [
+                entry('/semester-reports', 'Semester reports', FileText),
+                entry('/legacy-attendance', 'Legacy attendance', History)
+            ]
+        }
+    ],
+    student: [
+        {
+            label: 'Workspace',
+            items: [
+                entry('/student/dashboard', 'Overview', LayoutDashboard),
+                entry('/student/attendance', 'My attendance', ClipboardCheck),
+                entry('/academic', 'Courses & lectures', BookOpen)
+            ]
+        },
+        {
+            label: 'Records',
+            items: [
+                entry('/student/reports', 'Attendance report', BarChart3),
+                entry('/my-attendance/history', 'Attendance history', History),
+                entry('/attendance-analytics', 'Analytics', BarChart3),
+                entry('/attendance-corrections', 'Corrections', ClipboardCheck),
+                entry('/semester-reports', 'Semester reports', FileText),
+                entry('/legacy-attendance', 'Legacy attendance', History)
+            ]
+        }
+    ]
+};
+export default function Sidebar({ isOpen, onClose }) {
+    const { user, role, logout, isAuthenticated } = useAuth(),
+        location = useLocation(),
+        panel = useRef(null);
+    const [desktop, setDesktop] = useState(() => window.matchMedia('(min-width:1024px)').matches);
+    useEffect(() => {
+        const query = window.matchMedia('(min-width:1024px)'),
+            change = () => setDesktop(query.matches);
+        query.addEventListener('change', change);
+        return () => query.removeEventListener('change', change);
+    }, []);
+    useEffect(() => {
+        if (panel.current) panel.current.inert = !desktop && !isOpen;
+    }, [desktop, isOpen]);
+    useEffect(() => {
+        if (!isOpen || desktop) return;
+        const previous = document.activeElement,
+            overflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const node = panel.current;
+        node.querySelector('a,button')?.focus();
+        const key = (e) => {
+            if (e.key === 'Escape') onClose();
+            if (e.key === 'Tab') {
+                const items = [...node.querySelectorAll('a,button,select')].filter(
+                        (el) => el.getClientRects().length
+                    ),
+                    first = items[0],
+                    last = items.at(-1);
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        };
+        document.addEventListener('keydown', key);
+        return () => {
+            document.body.style.overflow = overflow;
+            document.removeEventListener('keydown', key);
+            if (previous?.isConnected) previous.focus();
+        };
+    }, [isOpen, desktop, onClose]);
+    if (!isAuthenticated) return null;
+    const home =
+        role === 'admin' ? '/admin/dashboard' : role === 'student' ? '/student/dashboard' : '/dashboard';
+    const profile =
         role === 'admin' ? '/admin/profile' : role === 'student' ? '/student/profile' : '/profile';
-
-    const isActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
-
-    const handleLinkClick = () => {
-        if (onClose) onClose();
-    };
-
-    const roleLabel =
-        role === 'admin' ? 'Administrator' : role === 'student' ? 'Student Portal' : 'Teacher Portal';
-
-    const roleBadgeColor =
-        role === 'admin'
-            ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-            : role === 'student'
-              ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-              : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-
     return (
         <>
-            {/* Mobile overlay backdrop */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+            {isOpen && !desktop && (
+                <button
+                    className="fixed inset-0 z-40 bg-black/50"
+                    aria-label="Close navigation overlay"
                     onClick={onClose}
                 />
             )}
-
-            {/* Sidebar */}
             <aside
-                className={`
-                    fixed inset-y-0 left-0 z-40 w-72 border-r border-zinc-800 bg-zinc-950 px-4 py-6
-                    transform transition-transform duration-300 ease-in-out
-                    lg:translate-x-0
-                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-                `}
+                id="workspace-navigation"
+                ref={panel}
+                className={'app-sidebar ' + (isOpen ? 'is-open' : '')}
+                aria-label="Workspace navigation"
+                aria-hidden={!desktop && !isOpen}
             >
-                <div className="flex h-full flex-col">
-                    {/* Header */}
-                    <div className="mb-4 flex items-center justify-between">
-                        <Link
-                            to={
-                                role === 'admin'
-                                    ? '/admin/dashboard'
-                                    : role === 'student'
-                                      ? '/student/dashboard'
-                                      : '/dashboard'
-                            }
-                            onClick={handleLinkClick}
-                            className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 flex-1"
-                        >
-                            <div className="rounded-xl bg-white p-2 text-black flex-shrink-0">
-                                <GraduationCap className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-zinc-400">Smart</p>
-                                <p className="font-semibold text-white text-sm">Attendance System</p>
-                            </div>
-                        </Link>
-
-                        <button
-                            onClick={onClose}
-                            className="ml-2 flex-shrink-0 rounded-xl border border-zinc-800 bg-zinc-900 p-2 text-zinc-400 hover:text-white lg:hidden"
-                            aria-label="Close sidebar"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
-                    </div>
-
-                    {/* Role badge */}
-                    <div
-                        className={`mb-4 rounded-xl border px-3 py-1.5 text-xs font-medium ${roleBadgeColor}`}
-                    >
-                        {roleLabel} — {user?.name || ''}
-                    </div>
-
-                    {/* Navigation */}
-                    <nav className="space-y-1 overflow-y-auto flex-1">
-                        {allLinks.map((link) => {
-                            const Icon = link.icon;
-                            const active = isActive(link.to);
-                            return (
-                                <Link
-                                    key={link.to}
-                                    to={link.to}
-                                    onClick={handleLinkClick}
-                                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                                        active
-                                            ? 'border-zinc-700 bg-zinc-800 text-white'
-                                            : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-zinc-100'
-                                    }`}
-                                >
-                                    <Icon className="h-4 w-4 flex-shrink-0" />
-                                    {link.label}
-                                </Link>
-                            );
-                        })}
-                        {role !== 'admin' && (
-                            <NotificationLink
-                                onClick={handleLinkClick}
-                                className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-zinc-300"
-                            />
-                        )}
-                    </nav>
-
-                    <button
-                        onClick={() => {
-                            logout();
-                            handleLinkClick();
-                        }}
-                        className="mt-3 w-full rounded-xl border border-zinc-800 px-3 py-2 text-left text-sm text-zinc-400 hover:text-red-400"
-                    >
-                        Sign out
+                <div className="flex items-center justify-between gap-2">
+                    <Link to={home} onClick={onClose} className="flex items-center gap-3 px-2 text-zinc-100">
+                        <GraduationCap size={24} className="text-primary" />
+                        <span>
+                            <span className="block text-base font-medium leading-5">Smart Attendance</span>
+                            <span className="block text-xs text-zinc-400 mt-1">Campus register</span>
+                        </span>
+                    </Link>
+                    <button onClick={onClose} className="icon-button lg:hidden" aria-label="Close sidebar">
+                        <X size={18} />
                     </button>
-                    {/* Profile shortcut */}
-                    <div className="mt-auto border-t border-zinc-800 pt-3">
-                        <Link
-                            to={profilePath}
-                            onClick={handleLinkClick}
-                            className={`flex items-center gap-3 rounded-2xl border p-2.5 transition-all duration-200 group ${
-                                isActive(profilePath)
-                                    ? 'border-zinc-700 bg-zinc-800 text-white shadow-sm'
-                                    : 'border-zinc-800/80 bg-zinc-900/90 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800'
-                            }`}
-                        >
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-200 border border-zinc-700 group-hover:border-blue-500/40 group-hover:text-blue-300 transition-colors">
-                                <User className="h-5 w-5" />
+                </div>
+                <nav aria-label="Primary navigation" className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+                    {(groups[role] || []).map((group, index) => (
+                        <div key={group.label}>
+                            <p className={'sidebar-group-label ' + (!index ? '!mt-0' : '')}>{group.label}</p>
+                            <div className="space-y-1">
+                                {group.items.map((item) => (
+                                    <NavLink
+                                        key={item.to}
+                                        to={item.to}
+                                        end={item.to === home}
+                                        onClick={onClose}
+                                        className="sidebar-link"
+                                    >
+                                        <item.icon size={16} />
+                                        <span>{item.label}</span>
+                                    </NavLink>
+                                ))}
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
-                                    {user?.name || 'My Profile'}
-                                </p>
-                                <p className="text-xs text-zinc-400 truncate flex items-center gap-1">
-                                    <span className="capitalize">{role || 'User'}</span> • Profile
-                                </p>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                    ))}
+                    {role !== 'admin' && (
+                        <div className="mt-5">
+                            <NotificationLink className="sidebar-link" onClick={onClose} />
+                        </div>
+                    )}
+                </nav>
+                <div className="border-t border-zinc-800 pt-3 space-y-1">
+                    <Link to={profile} onClick={onClose} className="sidebar-link">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-zinc-300 font-medium">
+                            {user?.name?.charAt(0) || 'A'}
+                        </span>
+                        <span className="min-w-0">
+                            <span className="block truncate text-zinc-100">{user?.name || 'My profile'}</span>
+                            <span className="block text-xs capitalize">
+                                {role === 'admin' ? 'Administrator' : role}
+                            </span>
+                        </span>
+                    </Link>
+                    <div className="flex gap-1">
+                        <Link to="/change-password" onClick={onClose} className="sidebar-link flex-1">
+                            <Settings size={16} />
+                            Settings
                         </Link>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                logout();
+                                onClose();
+                            }}
+                            className="icon-button"
+                            aria-label="Sign out"
+                            title="Sign out"
+                        >
+                            <LogOut size={16} />
+                        </button>
                     </div>
                 </div>
             </aside>
         </>
     );
-};
-
-export default Sidebar;
+}

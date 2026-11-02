@@ -8,7 +8,7 @@ export default function Accounts() {
         <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-title">Accounts & activation</h1>
+                    <h1 className="text-title text-title">Accounts & activation</h1>
                     <p className="text-subtext">
                         Manage login access and issue account activation invitations.
                     </p>

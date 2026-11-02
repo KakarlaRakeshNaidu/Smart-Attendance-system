@@ -1,249 +1,127 @@
-import React from 'react';
-import { useAuth } from '../../context/authContextState';
-import {
-    User,
-    Mail,
-    BookOpen,
-    FileText,
-    Edit3,
-    Camera,
-    Lock,
-    ShieldCheck,
-    Key,
-    LogOut,
-    Settings,
-    ChevronRight
-} from 'lucide-react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { User, ArrowRight, LogOut, KeyRound, Pencil } from 'lucide-react';
+import { useAuth } from '../../context/authContextState';
+import { PageHeader, Dialog } from '../common/Interface';
 import Loader from '../common/Loader';
-import Card from '../common/Card';
-
-const TeacherProfile = () => {
-    const { teacher, user, role, logout, loading } = useAuth();
-
-    if (loading) {
-        return <Loader />;
-    }
-
-    const handleLogout = () => {
-        if (window.confirm('Are you sure you want to log out of your account?')) {
-            logout();
-        }
-    };
-
-    const profilePhotoUrl = teacher?.profilePhoto
-        ? `${import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin)}${teacher.profilePhoto}`
-        : null;
-
-    const displayName = teacher?.name || user?.name || 'Faculty Member';
-    const displayEmail = teacher?.email || user?.email || '';
-
+export default function TeacherProfile() {
+    const { user, teacher, role, logout, loading } = useAuth(),
+        [confirm, setConfirm] = useState(false);
+    if (loading) return <Loader />;
+    const profile = teacher || user,
+        origin =
+            import.meta.env.VITE_API_BASE_URL ||
+            (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
     return (
-        <div className="space-y-6 page-enter max-w-5xl mx-auto">
-            <Card className="overflow-hidden border-zinc-800 bg-zinc-900/80 backdrop-blur">
-                <div className="h-32 bg-gradient-to-r from-blue-900/40 via-zinc-900 to-indigo-900/40 border-b border-zinc-800"></div>
-
-                <div className="relative px-4 sm:px-6 pb-6">
-                    {/* Top Row: Avatar & Action Buttons (responsive flex layout, zero overlap) */}
-                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-14 mb-4">
-                        <div className="relative group self-start">
-                            {profilePhotoUrl ? (
-                                <img
-                                    src={profilePhotoUrl}
-                                    alt="Profile"
-                                    className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl border-4 border-zinc-900 object-cover shadow-xl"
-                                />
-                            ) : (
-                                <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-2xl border-4 border-zinc-900 bg-zinc-800 shadow-xl">
-                                    <User className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-300" />
-                                </div>
-                            )}
-                            <Link
-                                to="/profile/edit"
-                                title="Change photo"
-                                className="absolute -bottom-2 -right-2 rounded-xl border border-zinc-700 bg-zinc-900 p-2 text-zinc-300 shadow-lg transition-all duration-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-600"
-                            >
-                                <Camera className="h-4 w-4" />
-                            </Link>
-                        </div>
-
-                        {/* Action buttons (Change Password is fully visible without overlap; duplicate logout hidden on mobile) */}
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <Link
-                                to="/change-password"
-                                className="rounded-xl border border-zinc-700 bg-zinc-800/80 px-3.5 py-2 text-xs sm:text-sm font-medium text-zinc-200 transition-all duration-200 hover:bg-zinc-700 hover:text-white flex items-center gap-2 shadow-sm"
-                            >
-                                <Key className="h-4 w-4 text-amber-400" />
-                                <span>Change Password</span>
-                            </Link>
-                            <Link
-                                to="/profile/edit"
-                                className="rounded-xl border border-blue-500/30 bg-blue-600/20 px-3.5 py-2 text-xs sm:text-sm font-medium text-blue-200 transition-all duration-200 hover:bg-blue-600/30 hover:border-blue-500/50 flex items-center gap-2 shadow-sm"
-                            >
-                                <Edit3 className="h-4 w-4 text-blue-400" />
-                                <span>Edit Profile</span>
-                            </Link>
-                            {/* Hidden on mobile to avoid duplicate logout buttons; single logout card exists in settings below */}
-                            <button
-                                onClick={handleLogout}
-                                className="hidden sm:flex rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-xs sm:text-sm font-medium text-red-300 transition-all duration-200 hover:bg-red-500/20 hover:border-red-500/50 items-center gap-2 shadow-sm"
-                                title="Sign out of system"
-                            >
-                                <LogOut className="h-4 w-4 text-red-400" />
-                                <span>Log Out</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="mt-4">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <h1 className="text-2xl font-bold text-white tracking-tight">{displayName}</h1>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-0.5 text-xs font-medium text-blue-300 capitalize">
-                                <ShieldCheck className="h-3.5 w-3.5" /> {role || 'Faculty'}
-                            </span>
-                        </div>
-                        <p className="text-xs text-zinc-400 mt-1">
-                            Official authorized account managed by Administration
-                        </p>
-
-                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Email Card (Immutable) */}
-                            <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-4 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/50">
-                                <div className="flex items-start gap-3">
-                                    <div className="rounded-xl bg-zinc-800 p-2.5 text-zinc-300">
-                                        <Mail className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                                                Email Address
-                                            </p>
-                                            <span className="inline-flex items-center gap-1 rounded bg-zinc-800 px-1.5 py-0.2 text-[10px] text-zinc-400 font-mono">
-                                                <Lock className="h-2.5 w-2.5" /> Locked by Admin
-                                            </span>
-                                        </div>
-                                        <p className="mt-1 font-semibold text-zinc-100 break-all">
-                                            {displayEmail}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Subject Card */}
-                            <div className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-4 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/50">
-                                <div className="flex items-start gap-3">
-                                    <div className="rounded-xl bg-zinc-800 p-2.5 text-zinc-300">
-                                        <BookOpen className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                                            Department / Role
-                                        </p>
-                                        <p className="mt-1 font-semibold text-zinc-100">
-                                            {teacher?.subject ||
-                                                (role === 'admin'
-                                                    ? 'System Administrator'
-                                                    : 'Academic Faculty')}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* About Me */}
-                        <div className="mt-6">
-                            <div className="flex items-center gap-2 mb-2">
-                                <FileText className="h-4 w-4 text-zinc-400" />
-                                <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                                    About
-                                </h3>
-                            </div>
-                            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-4 text-sm text-zinc-300 leading-relaxed">
-                                {teacher?.description ||
-                                    (role === 'admin'
-                                        ? 'Administrator account with full institutional authority.'
-                                        : 'No description added yet. Click "Edit Profile" to add faculty bio.')}
-                            </div>
-                        </div>
-                    </div>
+        <div className="page-stack">
+            <PageHeader
+                title="Profile"
+                description="Your campus account and profile details"
+                actions={
+                    <Link to="/profile/edit" className="btn-primary">
+                        <Pencil size={16} />
+                        Edit profile
+                    </Link>
+                }
+            />
+            <section className="profile-summary">
+                <div className="profile-avatar">
+                    {profile?.profilePhoto ? (
+                        <img
+                            src={origin + profile.profilePhoto}
+                            alt={profile?.name || 'Profile'}
+                            width="96"
+                            height="96"
+                        />
+                    ) : (
+                        <User size={32} />
+                    )}
                 </div>
-            </Card>
-
-            {/* Account Settings & Session Management Section (Merged onto Profile) */}
-            <div className="space-y-3">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-400">
-                    Account Settings & Security
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Link
-                        to="/profile/edit"
-                        className="group rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all duration-200 hover:bg-zinc-850 hover:border-zinc-700 flex flex-col justify-between"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="rounded-xl bg-zinc-800 p-3 text-zinc-300 group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-colors">
-                                <Edit3 className="h-5 w-5" />
+                <div>
+                    <p className="eyebrow">
+                        {role === 'admin' ? 'Administrator account' : 'Teaching account'}
+                    </p>
+                    <h2 className="text-2xl mt-2">{profile?.name || 'My profile'}</h2>
+                    <p className="text-sm text-zinc-400 mt-2">{profile?.email || user?.email}</p>
+                </div>
+            </section>
+            <div className="profile-grid">
+                <section className="card space-y-6">
+                    <h2>Account details</h2>
+                    <dl className="profile-details">
+                        {[
+                            ['Full name', profile?.name],
+                            ['Institutional email', profile?.email || user?.email],
+                            ['Role', role === 'admin' ? 'Administrator' : 'Teacher'],
+                            [
+                                'Subject / department',
+                                profile?.subject ||
+                                    (role === 'admin' ? 'System administration' : 'Not provided')
+                            ]
+                        ].map(([label, value]) => (
+                            <div key={label}>
+                                <dt>{label}</dt>
+                                <dd>{value || 'Not provided'}</dd>
                             </div>
-                            <div>
-                                <h3 className="font-semibold text-zinc-100 group-hover:text-white">
-                                    Edit Profile
-                                </h3>
-                                <p className="text-xs text-zinc-400 mt-0.5">Update bio and profile photo</p>
-                            </div>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between text-xs font-medium text-blue-400 group-hover:text-blue-300">
-                            <span>Open Editor</span>
-                            <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
+                        ))}
+                    </dl>
+                    <p className="field-hint">
+                        Official account details are managed by campus administration
+                    </p>
+                </section>
+                <section className="card space-y-5">
+                    <h2>About</h2>
+                    <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">
+                        {profile?.description || 'Add a brief introduction to your campus profile.'}
+                    </p>
+                    <Link to="/profile/edit" className="text-sm text-primary inline-flex gap-2 items-center">
+                        Update introduction
+                        <ArrowRight size={16} />
                     </Link>
-
-                    <Link
-                        to="/change-password"
-                        className="group rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all duration-200 hover:bg-zinc-850 hover:border-zinc-700 flex flex-col justify-between"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="rounded-xl bg-zinc-800 p-3 text-zinc-300 group-hover:text-amber-400 group-hover:bg-amber-500/10 transition-colors">
-                                <Key className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-zinc-100 group-hover:text-white">
-                                    Change Password
-                                </h3>
-                                <p className="text-xs text-zinc-400 mt-0.5">Update credentials & security</p>
-                            </div>
+                </section>
+            </div>
+            <section className="card">
+                <h2 className="mb-5">Account settings</h2>
+                <div className="settings-row">
+                    <div className="flex items-center gap-4">
+                        <KeyRound size={18} className="text-zinc-400" />
+                        <div>
+                            <h3>Password</h3>
+                            <p className="text-sm text-zinc-400 mt-1">
+                                Update the password for your campus account
+                            </p>
                         </div>
-                        <div className="mt-4 flex items-center justify-between text-xs font-medium text-amber-400 group-hover:text-amber-300">
-                            <span>Change Credentials</span>
-                            <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
+                    </div>
+                    <Link to="/change-password" className="btn-secondary">
+                        Change password
                     </Link>
-
-                    <button
-                        onClick={handleLogout}
-                        className="group text-left rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 transition-all duration-200 hover:bg-red-500/10 hover:border-red-500/30 flex flex-col justify-between"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="rounded-xl bg-zinc-800 p-3 text-zinc-400 group-hover:text-red-400 group-hover:bg-red-500/20 transition-colors">
-                                <LogOut className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-zinc-100 group-hover:text-red-300">
-                                    Log Out
-                                </h3>
-                                <p className="text-xs text-zinc-400 mt-0.5">
-                                    End your current active session
-                                </p>
-                            </div>
+                </div>
+                <div className="settings-row">
+                    <div className="flex items-center gap-4">
+                        <LogOut size={18} className="text-zinc-400" />
+                        <div>
+                            <h3>Current session</h3>
+                            <p className="text-sm text-zinc-400 mt-1">Sign out of this workstation</p>
                         </div>
-                        <div className="mt-4 flex items-center justify-between text-xs font-medium text-red-400 group-hover:text-red-300">
-                            <span>Sign Out Now</span>
-                            <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
+                    </div>
+                    <button className="btn-secondary" onClick={() => setConfirm(true)}>
+                        Sign out
                     </button>
                 </div>
-            </div>
+            </section>
+            {confirm && (
+                <Dialog title="Sign out of this workstation?" onClose={() => setConfirm(false)}>
+                    <p className="text-sm text-zinc-400">You can sign in again with your campus account</p>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <button className="btn-secondary" onClick={() => setConfirm(false)}>
+                            Cancel
+                        </button>
+                        <button className="btn-primary" onClick={logout}>
+                            Sign out
+                        </button>
+                    </div>
+                </Dialog>
+            )}
         </div>
     );
-};
-
-export default TeacherProfile;
+}

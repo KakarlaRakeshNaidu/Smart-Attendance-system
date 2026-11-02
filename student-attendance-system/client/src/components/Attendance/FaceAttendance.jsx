@@ -164,18 +164,16 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
         return (
             <div className="py-12 text-center">
                 <AlertCircle className="mx-auto mb-4 h-16 w-16 text-amber-300" />
-                <h3 className="mb-2 text-lg font-semibold text-zinc-100">
-                    Face Recognition API Not Available
-                </h3>
+                <h3 className="mb-2 text-lg font-medium text-zinc-100">Face recognition API not available</h3>
                 <p className="mb-4 text-zinc-400">The Python Face Recognition server is not running.</p>
-                <div className="mx-auto max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-left">
+                <div className="mx-auto max-w-md rounded-xl border border-zinc-800 bg-zinc-950 p-6 text-left">
                     <p className="mb-2 text-sm font-medium text-zinc-300">To start the Face API:</p>
                     <code className="block rounded-xl bg-zinc-900 px-2 py-1 text-xs text-zinc-200">
                         cd student-attendance-system/server/python &amp;&amp; python api_server.py
                     </code>
                 </div>
                 <button onClick={checkFaceApiStatus} className="btn-primary mt-4">
-                    Retry Connection
+                    Retry connection
                 </button>
             </div>
         );
@@ -187,7 +185,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
             <div className="mb-4 flex gap-2">
                 <button
                     onClick={() => setMode('single')}
-                    className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                    className={`flex-1 rounded-xl border px-4 py-3 font-medium transition-colors duration-200 flex items-center justify-center gap-2 ${
                         mode === 'single'
                             ? 'border-zinc-700 bg-zinc-800 text-white'
                             : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
@@ -198,7 +196,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                 </button>
                 <button
                     onClick={() => setMode('multiple')}
-                    className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                    className={`flex-1 rounded-xl border px-4 py-3 font-medium transition-colors duration-200 flex items-center justify-center gap-2 ${
                         mode === 'multiple'
                             ? 'border-zinc-700 bg-zinc-800 text-white'
                             : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
@@ -211,26 +209,24 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
 
             {/* Active Scoped Batch Indicator */}
             {selectedBatch ? (
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3.5 py-2 text-xs">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-xs">
                     <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
-                        <span className="font-semibold text-blue-200">
-                            Biometric Scope: {selectedBatch.branch} Year {selectedBatch.academicYear} — Sec{' '}
+                        <span className="h-2 w-2 rounded-full bg-blue-400 "></span>
+                        <span className="font-medium text-blue-200">
+                            Roster: {selectedBatch.branch} Year {selectedBatch.academicYear} — sec{' '}
                             {selectedBatch.section} ({selectedBatch.subsection})
                         </span>
                     </div>
-                    <span className="text-[11px] text-zinc-400">
-                        Comparing embeddings ONLY for this batch
-                    </span>
+                    <span className="text-xs text-zinc-400">Comparing embeddings ONLY for this batch</span>
                 </div>
             ) : (
-                <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs text-amber-300">
-                    ⚠️ Please select an authorized batch above before starting recognition.
+                <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-300">
+                    Please select an authorized batch above before starting recognition.
                 </div>
             )}
 
             {/* Camera view */}
-            <div className="relative mb-4 aspect-video overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+            <div className="relative mb-4 aspect-video overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
                 <video
                     ref={videoRef}
                     autoPlay
@@ -249,7 +245,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                 {loading && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="text-center text-white">
-                            <Scan className="h-12 w-12 mx-auto mb-2 animate-pulse" />
+                            <Scan className="h-12 w-12 mx-auto mb-2 " />
                             <p>Scanning faces...</p>
                         </div>
                     </div>
@@ -259,7 +255,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                 {isCameraOn && (
                     <button
                         onClick={flipCamera}
-                        className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-2xl border border-zinc-600 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-200 backdrop-blur transition hover:bg-zinc-800 md:hidden"
+                        className="absolute bottom-3 right-3 flex items-center gap-2 rounded-xl border border-zinc-600 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-200  transition hover:bg-zinc-800 md:hidden"
                         aria-label="Flip camera"
                     >
                         <FlipHorizontal className="h-4 w-4" />
@@ -279,7 +275,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                         className="flex-1 btn-primary flex items-center justify-center gap-2"
                     >
                         <Camera className="h-5 w-5" />
-                        Start Camera
+                        Start camera
                     </button>
                 ) : (
                     <>
@@ -311,7 +307,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
             {/* Result panel */}
             {lastResult && (
                 <div
-                    className={`mt-4 rounded-2xl border p-4 transition-all duration-300 ${lastResult.success ? 'border-emerald-900/60 bg-emerald-500/10' : 'border-red-900/60 bg-red-500/10'}`}
+                    className={`mt-4 rounded-xl border p-4 transition-colors duration-300 ${lastResult.success ? 'border-emerald-900/60 bg-emerald-500/10' : 'border-red-900/60 bg-red-500/10'}`}
                 >
                     <div className="flex items-start gap-3">
                         {lastResult.success ? (
@@ -321,7 +317,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                         )}
                         <div className="min-w-0 flex-1">
                             <p
-                                className={`font-semibold text-base ${lastResult.success ? 'text-emerald-300' : 'text-red-300'}`}
+                                className={`font-medium text-base ${lastResult.success ? 'text-emerald-300' : 'text-red-300'}`}
                             >
                                 {lastResult.message ||
                                     (lastResult.success
@@ -334,7 +330,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                 <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-950/40 p-3 text-xs">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-bold text-zinc-100">
+                                            <p className="text-sm font-medium text-zinc-100">
                                                 {lastResult.student.name}
                                             </p>
                                             <p className="text-zinc-400 font-mono">
@@ -342,10 +338,10 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                             </p>
                                         </div>
                                         <div className="text-right">
-                                            <span className="inline-block rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300 border border-emerald-500/30">
+                                            <span className="inline-block rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-500/30">
                                                 {(lastResult.student.confidence * 100).toFixed(1)}% match
                                             </span>
-                                            <p className="mt-1 text-[11px] font-medium text-emerald-400">
+                                            <p className="mt-1 text-xs font-medium text-emerald-400">
                                                 {lastResult.alreadyMarked
                                                     ? 'Already Present'
                                                     : 'Marked Present'}
@@ -382,22 +378,22 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                             {/* Status badges header */}
                                             <div className="flex flex-wrap items-center gap-2 text-xs">
                                                 <span className="rounded-lg bg-zinc-800/90 px-2.5 py-1 font-medium text-zinc-200 border border-zinc-700">
-                                                    👥 Total Faces:{' '}
+                                                    Total Faces:{' '}
                                                     <strong className="text-white">{totalDetected}</strong>
                                                 </span>
                                                 {markedList.length > 0 && (
-                                                    <span className="rounded-lg bg-emerald-500/20 px-2.5 py-1 font-semibold text-emerald-300 border border-emerald-500/40">
-                                                        ✓ Newly Marked: {markedList.length}
+                                                    <span className="rounded-lg bg-emerald-500/20 px-2.5 py-1 font-medium text-emerald-300 border border-emerald-500/40">
+                                                        Newly Marked: {markedList.length}
                                                     </span>
                                                 )}
                                                 {alreadyList.length > 0 && (
-                                                    <span className="rounded-lg bg-amber-500/20 px-2.5 py-1 font-semibold text-amber-300 border border-amber-500/40">
+                                                    <span className="rounded-lg bg-amber-500/20 px-2.5 py-1 font-medium text-amber-300 border border-amber-500/40">
                                                         ⏳ Already Present: {alreadyList.length}
                                                     </span>
                                                 )}
                                                 {unrecognized > 0 && (
                                                     <span className="rounded-lg bg-zinc-800 px-2.5 py-1 font-medium text-zinc-400 border border-zinc-700">
-                                                        ❓ Unrecognized: {unrecognized}
+                                                        Unrecognized: {unrecognized}
                                                     </span>
                                                 )}
                                             </div>
@@ -405,7 +401,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                             {/* Newly Marked Students Cards */}
                                             {markedList.length > 0 && (
                                                 <div>
-                                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-1.5">
+                                                    <h4 className="text-xs font-medium   text-emerald-400 mb-2 flex items-center gap-2">
                                                         <UserCheck className="h-4 w-4" /> Marked Present Now (
                                                         {markedList.length})
                                                     </h4>
@@ -416,15 +412,15 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                                                 className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-3 py-2 text-xs shadow-sm"
                                                             >
                                                                 <div className="min-w-0 pr-2">
-                                                                    <p className="font-semibold text-zinc-100 truncate">
+                                                                    <p className="font-medium text-zinc-100 truncate">
                                                                         {s.name}
                                                                     </p>
-                                                                    <p className="text-[11px] text-zinc-400 font-mono">
+                                                                    <p className="text-xs text-zinc-400 font-mono">
                                                                         {s.studentId || s.studentRollNo}
                                                                     </p>
                                                                 </div>
                                                                 <div className="text-right flex-shrink-0">
-                                                                    <span className="inline-block rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300 border border-emerald-500/30">
+                                                                    <span className="inline-block rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-500/30">
                                                                         {(s.confidence * 100).toFixed(1)}%
                                                                         match
                                                                     </span>
@@ -438,7 +434,7 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                             {/* Already Marked Students Cards */}
                                             {alreadyList.length > 0 && (
                                                 <div>
-                                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-1.5">
+                                                    <h4 className="text-xs font-medium   text-amber-400 mb-2 flex items-center gap-2">
                                                         <Clock className="h-4 w-4" /> Already Marked Present
                                                         Earlier ({alreadyList.length})
                                                     </h4>
@@ -449,15 +445,15 @@ const FaceAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                                                 className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs shadow-sm"
                                                             >
                                                                 <div className="min-w-0 pr-2">
-                                                                    <p className="font-semibold text-zinc-200 truncate">
+                                                                    <p className="font-medium text-zinc-200 truncate">
                                                                         {s.name}
                                                                     </p>
-                                                                    <p className="text-[11px] text-zinc-400 font-mono">
+                                                                    <p className="text-xs text-zinc-400 font-mono">
                                                                         {s.studentId || s.studentRollNo}
                                                                     </p>
                                                                 </div>
                                                                 <div className="text-right flex-shrink-0">
-                                                                    <span className="inline-block rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300 border border-amber-500/30">
+                                                                    <span className="inline-block rounded-md bg-amber-500/20 px-1.5 py-0.5 text-xs font-medium text-amber-300 border border-amber-500/30">
                                                                         {(s.confidence * 100).toFixed(1)}%
                                                                         match
                                                                     </span>

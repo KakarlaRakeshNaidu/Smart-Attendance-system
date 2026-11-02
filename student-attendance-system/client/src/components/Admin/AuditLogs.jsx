@@ -42,7 +42,7 @@ const AuditLogs = () => {
     return (
         <div className="space-y-5">
             <div>
-                <h1 className="text-2xl font-bold text-white">Audit Logs</h1>
+                <h1 className="text-title font-medium text-white">Audit logs</h1>
                 <p className="text-sm text-zinc-400">{total} event(s) logged</p>
             </div>
 
@@ -57,7 +57,7 @@ const AuditLogs = () => {
                 className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-white placeholder-zinc-500 focus:border-white focus:outline-none"
             />
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800 overflow-hidden">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800 overflow-hidden">
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <Loader2 className="h-7 w-7 animate-spin text-zinc-400" />
@@ -121,7 +121,7 @@ const AuditLogs = () => {
                 <button
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
-                    className="rounded-xl border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500"
+                    className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500"
                 >
                     ← Prev
                 </button>
@@ -129,7 +129,7 @@ const AuditLogs = () => {
                 <button
                     disabled={logs.length < 50}
                     onClick={() => setPage((p) => p + 1)}
-                    className="rounded-xl border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500"
+                    className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500"
                 >
                     Next →
                 </button>

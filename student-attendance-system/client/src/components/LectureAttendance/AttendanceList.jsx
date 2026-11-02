@@ -92,10 +92,10 @@ const AttendanceList = ({ onAttendanceMarked }) => {
                 </div>
             )}
             {attendance.map((item) => (
-                <section key={item._id} className="rounded-2xl border border-zinc-800 p-4 space-y-3">
+                <section key={item._id} className="rounded-xl border border-zinc-800 p-4 space-y-3">
                     <div className="flex flex-wrap justify-between gap-3">
                         <div>
-                            <p className="font-semibold">
+                            <p className="font-medium">
                                 {item.subject || 'No subject'} · {item.class} {item.section}{' '}
                                 {item.term && '· ' + item.term}
                             </p>
@@ -124,7 +124,7 @@ const AttendanceList = ({ onAttendanceMarked }) => {
                                         className="btn-danger flex items-center gap-2"
                                     >
                                         <Trash2 className="h-4 w-4" />
-                                        Reset Attendance
+                                        Reset attendance
                                     </button>
                                 )}
                             </div>

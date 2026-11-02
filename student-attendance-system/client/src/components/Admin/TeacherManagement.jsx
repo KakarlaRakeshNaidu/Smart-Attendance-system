@@ -1,3 +1,4 @@
+import { FormField as Field, Dialog as Modal } from '../common/Interface';
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import {
@@ -40,37 +41,8 @@ const VALID_SUBSECTIONS = {
 };
 
 // ── Shared field component ────────────────────────────────────────────────────
-const Field = ({ label, type = 'text', value, onChange, placeholder, required }) => (
-    <div>
-        <label className="mb-1 block text-xs font-medium text-zinc-400">
-            {label}
-            {required && ' *'}
-        </label>
-        <input
-            type={type}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            required={required}
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-white focus:outline-none"
-        />
-    </div>
-);
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-const Modal = ({ title, onClose, maxWidth = 'max-w-md', children }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-        <div className={`w-full ${maxWidth} rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl`}>
-            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-                <h3 className="font-semibold text-white">{title}</h3>
-                <button onClick={onClose} className="text-zinc-400 hover:text-white">
-                    <X className="h-5 w-5" />
-                </button>
-            </div>
-            <div className="p-5">{children}</div>
-        </div>
-    </div>
-);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -184,7 +156,7 @@ const TeacherManagement = () => {
         try {
             const res = await api.post('/admin/teachers', form);
             if (res.data.success) {
-                setMsg('Teacher created successfully!');
+                setMsg('Teacher created');
                 fetchTeachers();
                 setTimeout(closeModal, 1200);
             } else {
@@ -204,7 +176,7 @@ const TeacherManagement = () => {
             const teacherId = selected.id || selected._id;
             const res = await api.put(`/admin/teachers/${teacherId}`, form);
             if (res.data.success) {
-                setMsg('Teacher updated successfully!');
+                setMsg('Teacher updated successfully');
                 fetchTeachers();
                 setTimeout(closeModal, 1200);
             } else {
@@ -261,7 +233,7 @@ const TeacherManagement = () => {
                 newPassword: resetPassword
             });
             if (res.data.success) {
-                setMsg('Password reset successfully!');
+                setMsg('Password reset successfully');
                 setTimeout(closeModal, 1200);
             } else {
                 setErr(res.data.message);
@@ -288,7 +260,7 @@ const TeacherManagement = () => {
             };
             const res = await api.post(`/admin/teachers/${teacherId}/access`, payload);
             if (res.data.success) {
-                setMsg('Student batch access assigned successfully!');
+                setMsg('Student batch access assigned successfully');
                 const refreshed = await api.get(`/admin/teachers/${teacherId}/access`);
                 if (refreshed.data.success) {
                     setTeacherAccessList(refreshed.data.access || []);
@@ -326,7 +298,7 @@ const TeacherManagement = () => {
         <div className="space-y-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Teachers</h1>
+                    <h1 className="text-title font-medium text-white">Teachers</h1>
                     <p className="text-sm text-zinc-400">
                         {total} {statusFilter === 'all' ? 'total' : statusFilter} teacher account(s)
                     </p>
@@ -335,7 +307,7 @@ const TeacherManagement = () => {
                     onClick={openCreate}
                     className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-zinc-100 transition-colors shadow-sm"
                 >
-                    <UserPlus className="h-4 w-4" /> Add Teacher
+                    <UserPlus className="h-4 w-4" /> Add teacher
                 </button>
             </div>
 
@@ -355,7 +327,7 @@ const TeacherManagement = () => {
                         <button
                             key={status}
                             onClick={() => setStatusFilter(status)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all ${
+                            className={`rounded-lg px-3 py-2 text-xs font-medium capitalize transition-colors ${
                                 statusFilter === status
                                     ? 'bg-zinc-800 text-white shadow-sm'
                                     : 'text-zinc-400 hover:text-zinc-200'
@@ -374,14 +346,14 @@ const TeacherManagement = () => {
             )}
 
             {/* Table (Horizontal scroll on mobile) */}
-            <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-900 shadow-sm">
+            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900 shadow-sm">
                 <table className="min-w-[720px] w-full text-sm">
                     <thead className="border-b border-zinc-800 bg-zinc-950">
                         <tr>
                             {['Name', 'Email', 'Subject', 'Student Access', 'Status', 'Actions'].map((h) => (
                                 <th
                                     key={h}
-                                    className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500"
+                                    className="px-4 py-3 text-left text-xs font-medium   text-zinc-500"
                                 >
                                     {h}
                                 </th>
@@ -417,20 +389,20 @@ const TeacherManagement = () => {
                                                     {accessList.slice(0, 2).map((acc) => (
                                                         <span
                                                             key={acc.id}
-                                                            className="inline-flex items-center rounded-md bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 text-[11px] font-medium text-blue-300"
+                                                            className="inline-flex items-center rounded-md bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 text-xs font-medium text-blue-300"
                                                         >
                                                             Y{acc.academicYear} {acc.branch}-{acc.section} (
                                                             {acc.subsection})
                                                         </span>
                                                     ))}
                                                     {accessList.length > 2 && (
-                                                        <span className="inline-flex items-center rounded-md bg-zinc-800 px-1.5 py-0.5 text-[11px] font-medium text-zinc-400">
+                                                        <span className="inline-flex items-center rounded-md bg-zinc-800 px-1.5 py-0.5 text-xs font-medium text-zinc-400">
                                                             +{accessList.length - 2} more
                                                         </span>
                                                     )}
                                                 </div>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[11px] font-medium text-amber-400">
+                                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400">
                                                     No access assigned
                                                 </span>
                                             )}
@@ -447,7 +419,7 @@ const TeacherManagement = () => {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => openAccess(t)}
                                                     title="Manage Student Access"
@@ -457,7 +429,7 @@ const TeacherManagement = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => openEdit(t)}
-                                                    title="Edit Teacher"
+                                                    title="Edit teacher"
                                                     className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
                                                 >
                                                     <Pencil className="h-4 w-4" />
@@ -486,7 +458,7 @@ const TeacherManagement = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => openDelete(t)}
-                                                    title="Delete Teacher"
+                                                    title="Delete teacher"
                                                     className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 transition-colors"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -503,7 +475,7 @@ const TeacherManagement = () => {
 
             {/* Create Modal */}
             {modal === 'create' && (
-                <Modal title="Add Teacher" onClose={closeModal}>
+                <Modal title="Add teacher" onClose={closeModal}>
                     <form onSubmit={handleCreate} className="space-y-3">
                         <Field
                             label="Full Name"
@@ -549,7 +521,7 @@ const TeacherManagement = () => {
 
             {/* Edit Modal */}
             {modal === 'edit' && (
-                <Modal title="Edit Teacher" onClose={closeModal}>
+                <Modal title="Edit teacher" onClose={closeModal}>
                     <form onSubmit={handleEdit} className="space-y-3">
                         <Field
                             label="Full Name"
@@ -611,12 +583,12 @@ const TeacherManagement = () => {
 
             {/* Delete Confirmation Modal */}
             {modal === 'delete' && (
-                <Modal title="Delete Teacher" onClose={closeModal}>
+                <Modal title="Delete teacher" onClose={closeModal}>
                     <div className="space-y-4">
                         <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-400">
                             <AlertTriangle className="h-6 w-6 flex-shrink-0" />
                             <div className="text-sm">
-                                <p className="font-semibold text-white">Permanently Delete Teacher?</p>
+                                <p className="font-medium text-white">Permanently Delete Teacher?</p>
                                 <p className="text-xs text-red-300 mt-1">
                                     This action cannot be undone. It will permanently remove:
                                 </p>
@@ -660,7 +632,7 @@ const TeacherManagement = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <Trash2 className="h-4 w-4" /> Delete Teacher
+                                        <Trash2 className="h-4 w-4" /> Delete teacher
                                     </>
                                 )}
                             </button>
@@ -678,10 +650,10 @@ const TeacherManagement = () => {
                 >
                     <div className="space-y-5">
                         {/* Information banner */}
-                        <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3.5 text-xs text-blue-300 flex items-start gap-2.5">
+                        <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3.5 text-xs text-blue-300 flex items-start gap-3">
                             <BookOpen className="h-4 w-4 flex-shrink-0 mt-0.5 text-blue-400" />
                             <div>
-                                <p className="font-semibold text-blue-200">Administration Access Control</p>
+                                <p className="font-medium text-blue-200">Administration access control</p>
                                 <p className="mt-0.5 text-blue-300/90 leading-relaxed">
                                     Teachers only have access to students within the academic batches assigned
                                     below. Assign multiple academic year, branch, section, and subsection
@@ -693,8 +665,8 @@ const TeacherManagement = () => {
                         {/* Current Assigned Access List */}
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                                    <Layers className="h-3.5 w-3.5" /> Assigned Student Batches (
+                                <h4 className="text-xs font-medium   text-zinc-400 flex items-center gap-2">
+                                    <Layers className="h-4 w-4" /> Assigned Student Batches (
                                     {teacherAccessList.length})
                                 </h4>
                             </div>
@@ -708,7 +680,7 @@ const TeacherManagement = () => {
                                     <p className="text-xs text-amber-400 font-medium">
                                         No student batches assigned yet
                                     </p>
-                                    <p className="text-[11px] text-zinc-500 mt-1">
+                                    <p className="text-xs text-zinc-500 mt-1">
                                         This teacher currently has no student access. Assign one below.
                                     </p>
                                 </div>
@@ -717,10 +689,10 @@ const TeacherManagement = () => {
                                     {teacherAccessList.map((a) => (
                                         <div
                                             key={a.id}
-                                            className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-800/40 px-3.5 py-2.5 hover:border-zinc-700 transition-colors"
+                                            className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-800/40 px-4 py-3 hover:border-zinc-700 transition-colors"
                                         >
                                             <div className="flex flex-wrap items-center gap-2 text-xs">
-                                                <span className="font-semibold text-white">
+                                                <span className="font-medium text-white">
                                                     Year {a.academicYear}
                                                 </span>
                                                 <span className="text-zinc-500">•</span>
@@ -755,14 +727,14 @@ const TeacherManagement = () => {
                             onSubmit={handleAssignAccess}
                             className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 space-y-3"
                         >
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-                                <Plus className="h-3.5 w-3.5 text-emerald-400" /> Grant Student Batch Access
+                            <h4 className="text-xs font-medium   text-zinc-300 flex items-center gap-2">
+                                <Plus className="h-4 w-4 text-emerald-400" /> Grant student batch access
                             </h4>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div>
-                                    <label className="mb-1 block text-[11px] font-medium text-zinc-400">
-                                        Academic Year
+                                    <label className="mb-1 block text-xs font-medium text-zinc-400">
+                                        Academic year
                                     </label>
                                     <select
                                         value={accessForm.academicYear}
@@ -783,7 +755,7 @@ const TeacherManagement = () => {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-[11px] font-medium text-zinc-400">
+                                    <label className="mb-1 block text-xs font-medium text-zinc-400">
                                         Branch
                                     </label>
                                     <select
@@ -802,7 +774,7 @@ const TeacherManagement = () => {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-[11px] font-medium text-zinc-400">
+                                    <label className="mb-1 block text-xs font-medium text-zinc-400">
                                         Section
                                     </label>
                                     <select
@@ -826,7 +798,7 @@ const TeacherManagement = () => {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-[11px] font-medium text-zinc-400">
+                                    <label className="mb-1 block text-xs font-medium text-zinc-400">
                                         Subsection
                                     </label>
                                     <select
@@ -836,7 +808,7 @@ const TeacherManagement = () => {
                                         }
                                         className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-2.5 py-2 text-xs text-white focus:border-white focus:outline-none"
                                     >
-                                        <option value="ALL">All Subsections</option>
+                                        <option value="ALL">All subsections</option>
                                         {(VALID_SUBSECTIONS[accessForm.section] || []).map((sub) => (
                                             <option key={sub} value={sub}>
                                                 {sub}
@@ -852,15 +824,15 @@ const TeacherManagement = () => {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-white py-2 text-xs font-semibold text-black hover:bg-zinc-100 transition-colors disabled:opacity-50"
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2 text-xs font-medium text-black hover:bg-zinc-100 transition-colors disabled:opacity-50"
                             >
                                 {submitting ? (
                                     <>
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Granting Access…
+                                        <Loader2 className="h-4 w-4 animate-spin" /> Granting Access…
                                     </>
                                 ) : (
                                     <>
-                                        <Plus className="h-3.5 w-3.5" /> Grant Access to Batch
+                                        <Plus className="h-4 w-4" /> Grant Access to Batch
                                     </>
                                 )}
                             </button>

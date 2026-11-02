@@ -1,3 +1,4 @@
+import { PageHeader } from '../common/Interface';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/authContextState';
@@ -238,8 +239,8 @@ const Dashboard = () => {
         return (
             <div className="space-y-6 page-enter">
                 <Card className="p-6">
-                    <div className="h-7 w-64 bg-zinc-800 rounded animate-pulse" />
-                    <div className="h-4 w-40 bg-zinc-800/60 rounded mt-2 animate-pulse" />
+                    <div className="h-7 w-64 bg-zinc-800 rounded " />
+                    <div className="h-4 w-40 bg-zinc-800/60 rounded mt-2 " />
                 </Card>
                 <SkeletonStatCards />
             </div>
@@ -248,159 +249,64 @@ const Dashboard = () => {
 
     return (
         <div className="space-y-6 page-enter">
-            {/* Header Card */}
-            <Card className="p-5 sm:p-6 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border-zinc-800">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                                Welcome back, {teacher?.name || user?.name || 'Teacher'}
-                            </h1>
-                            <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-blue-300">
-                                Faculty Portal
-                            </span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-zinc-400">
-                            {new Date().toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}
-                        </p>
+            <PageHeader
+                title="Teaching overview"
+                description={
+                    (teacher?.name || user?.name || 'Teacher') +
+                    ' · ' +
+                    new Date().toLocaleDateString('en-IN', {
+                        timeZone: 'Asia/Kolkata',
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long'
+                    })
+                }
+                actions={
+                    <Link className="btn-primary" to="/attendance">
+                        <ClipboardCheck size={16} />
+                        Take attendance
+                    </Link>
+                }
+            />
+            <div className="metric-grid">
+                {[
+                    ['Assigned batches', summary.totalBatches, `${summary.completedBatches} completed today`],
+                    ['My students', summary.totalMyStudents, 'Enrolled across your classes'],
+                    ['Present today', summary.totalPresent, `${summary.totalAbsent} marked absent`],
+                    [
+                        "Today's progress",
+                        `${summary.totalBatches ? Math.round((summary.completedBatches / summary.totalBatches) * 100) : 0}%`,
+                        'Batches with saved attendance'
+                    ]
+                ].map(([label, value, detail]) => (
+                    <div className="card" key={label}>
+                        <p className="text-sm text-zinc-400">{label}</p>
+                        <p className="stat-value mt-3">{value}</p>
+                        <p className="field-hint mt-3">{detail}</p>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3.5 py-2 text-xs font-medium text-zinc-300">
-                            <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                            <span>
-                                {summary.totalBatches} Assigned{' '}
-                                {summary.totalBatches === 1 ? 'Batch' : 'Batches'}
-                            </span>
-                        </div>
-                        <div
-                            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold ${
-                                summary.completedBatches === summary.totalBatches && summary.totalBatches > 0
-                                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                                    : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                            }`}
-                        >
-                            <span
-                                className={`h-2 w-2 rounded-full ${
-                                    summary.completedBatches === summary.totalBatches &&
-                                    summary.totalBatches > 0
-                                        ? 'bg-emerald-400'
-                                        : 'bg-amber-400 animate-pulse'
-                                }`}
-                            />
-                            <span>
-                                {summary.completedBatches} of {summary.totalBatches} Completed Today
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </Card>
-
-            {/* Teacher Scoped Summary Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                <Card className="p-4 sm:p-5 hover:border-zinc-700 transition-all">
-                    <div className="flex items-start justify-between">
-                        <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-2.5 text-blue-400">
-                            <Layers className="h-5 w-5" />
-                        </div>
-                        <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
-                            Scoped Batches
-                        </span>
-                    </div>
-                    <p className="mt-3 text-2xl sm:text-3xl font-bold text-white font-mono">
-                        {summary.totalBatches}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-400 truncate">
-                        {batchStats.map((b) => `${b.batch.branch}-${b.batch.subsection}`).join(', ') ||
-                            'No batches assigned'}
-                    </p>
-                </Card>
-
-                <Card className="p-4 sm:p-5 hover:border-zinc-700 transition-all">
-                    <div className="flex items-start justify-between">
-                        <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-2.5 text-purple-400">
-                            <Users className="h-5 w-5" />
-                        </div>
-                        <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
-                            My Students
-                        </span>
-                    </div>
-                    <p className="mt-3 text-2xl sm:text-3xl font-bold text-white font-mono">
-                        {summary.totalMyStudents}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-400">Enrolled across your classes</p>
-                </Card>
-
-                <Card className="p-4 sm:p-5 hover:border-zinc-700 transition-all">
-                    <div className="flex items-start justify-between">
-                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-emerald-400">
-                            <UserCheck className="h-5 w-5" />
-                        </div>
-                        <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
-                            Present Today
-                        </span>
-                    </div>
-                    <p className="mt-3 text-2xl sm:text-3xl font-bold text-emerald-400 font-mono">
-                        {summary.totalPresent}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-400">
-                        {summary.totalAbsent > 0
-                            ? `${summary.totalAbsent} absent students`
-                            : 'All marked students present'}
-                    </p>
-                </Card>
-
-                <Card className="p-4 sm:p-5 hover:border-zinc-700 transition-all">
-                    <div className="flex items-start justify-between">
-                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-amber-400">
-                            <ClipboardCheck className="h-5 w-5" />
-                        </div>
-                        <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
-                            Today's Progress
-                        </span>
-                    </div>
-                    <p className="mt-3 text-2xl sm:text-3xl font-bold text-white font-mono">
-                        {summary.totalBatches > 0
-                            ? `${Math.round((summary.completedBatches / summary.totalBatches) * 100)}%`
-                            : '0%'}
-                    </p>
-                    <div className="mt-2 h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                            style={{
-                                width: `${summary.totalBatches > 0 ? (summary.completedBatches / summary.totalBatches) * 100 : 0}%`
-                            }}
-                        />
-                    </div>
-                </Card>
+                ))}
             </div>
-
             {/* Primary Section: My Assigned Batches Hub */}
             <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <span>My Assigned Academic Batches</span>
+                        <h2 className="text-lg font-medium text-white flex items-center gap-2">
+                            <span>Assigned academic batches</span>
                             <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400 font-mono">
                                 {batchStats.length}
                             </span>
                         </h2>
                         <p className="text-xs text-zinc-400">
-                            Take biometric attendance or view rosters strictly scoped to each batch
+                            Record attendance and review the roster for each assigned batch
                         </p>
                     </div>
 
                     <Link
                         to="/students"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                        className="inline-flex items-center gap-2 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
                     >
-                        <span>View Grouped Directory</span>
-                        <ChevronRight className="h-3.5 w-3.5" />
+                        <span>View grouped directory</span>
+                        <ChevronRight className="h-4 w-4" />
                     </Link>
                 </div>
 
@@ -423,22 +329,22 @@ const Dashboard = () => {
                                             batch.id ||
                                             `${batch.branch}-${batch.academicYear}-${batch.section}-${batch.subsection}`
                                         }
-                                        className="group rounded-2xl border border-zinc-800 bg-zinc-900/90 p-5 transition-all duration-200 hover:border-zinc-700 hover:shadow-lg hover:shadow-black/40 flex flex-col justify-between space-y-4"
+                                        className="group rounded-xl border border-zinc-800 bg-zinc-900/90 p-5 transition-colors duration-200 hover:border-zinc-700 hover:shadow-lg  flex flex-col justify-between space-y-4"
                                     >
                                         {/* Batch Title Header */}
                                         <div className="space-y-2">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="rounded-lg bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 text-xs font-bold text-blue-300 font-mono">
+                                                        <span className="rounded-lg bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 text-xs font-medium text-blue-300 font-mono">
                                                             {batch.branch}
                                                         </span>
-                                                        <span className="text-xs font-semibold text-zinc-300">
+                                                        <span className="text-xs font-medium text-zinc-300">
                                                             {formatAcademicYear(batch.academicYear)}
                                                         </span>
                                                     </div>
-                                                    <h3 className="mt-2 text-base font-bold text-white group-hover:text-blue-400 transition-colors">
-                                                        Section {batch.section} — Batch {batch.subsection}
+                                                    <h3 className="mt-2 text-base font-medium text-white group-hover:text-blue-400 transition-colors">
+                                                        Section {batch.section} — batch {batch.subsection}
                                                     </h3>
                                                     <p className="text-xs text-zinc-500 mt-0.5">
                                                         {branchName}
@@ -447,13 +353,13 @@ const Dashboard = () => {
 
                                                 {/* Status Badge */}
                                                 {isMarked ? (
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-                                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                                    <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+                                                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                                                         Marked
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-300">
-                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+                                                    <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+                                                        <AlertCircle className="h-4 w-4 text-amber-400" />
                                                         Pending
                                                     </span>
                                                 )}
@@ -463,25 +369,25 @@ const Dashboard = () => {
                                             <div className="pt-2 border-t border-zinc-800/80">
                                                 <div className="flex items-center justify-between text-xs text-zinc-400">
                                                     <span>Enrolled Roster:</span>
-                                                    <span className="font-semibold text-zinc-200">
+                                                    <span className="font-medium text-zinc-200">
                                                         {enrolledCount}{' '}
                                                         {enrolledCount === 1 ? 'Student' : 'Students'}
                                                     </span>
                                                 </div>
 
                                                 {isMarked ? (
-                                                    <div className="mt-2 flex items-center justify-between rounded-xl bg-zinc-950/70 p-2.5 border border-zinc-800 text-xs">
+                                                    <div className="mt-2 flex items-center justify-between rounded-xl bg-zinc-950/70 p-3 border border-zinc-800 text-xs">
                                                         <div className="flex items-center gap-2 font-mono">
-                                                            <span className="text-emerald-400 font-semibold">
+                                                            <span className="text-emerald-400 font-medium">
                                                                 {presentCount} Present
                                                             </span>
                                                             <span className="text-zinc-600">•</span>
-                                                            <span className="text-red-400 font-semibold">
+                                                            <span className="text-red-400 font-medium">
                                                                 {absentCount} Absent
                                                             </span>
                                                         </div>
                                                         {latestMarkedTime && (
-                                                            <span className="text-[10px] text-zinc-500 font-mono">
+                                                            <span className="text-xs text-zinc-500 font-mono">
                                                                 {latestMarkedTime.toLocaleTimeString([], {
                                                                     hour: '2-digit',
                                                                     minute: '2-digit'
@@ -490,8 +396,8 @@ const Dashboard = () => {
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <div className="mt-2 rounded-xl bg-amber-500/5 border border-amber-500/20 p-2.5 text-xs text-amber-300/90 flex items-center gap-2">
-                                                        <Clock className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
+                                                    <div className="mt-2 rounded-xl bg-amber-500/5 border border-amber-500/20 p-3 text-xs text-amber-300/90 flex items-center gap-2">
+                                                        <Clock className="h-4 w-4 text-amber-400 flex-shrink-0" />
                                                         <span>No attendance taken yet today</span>
                                                     </div>
                                                 )}
@@ -502,28 +408,28 @@ const Dashboard = () => {
                                         <div className="pt-2 flex items-center gap-2">
                                             <button
                                                 onClick={() => handleLaunchAttendance(batch, 'face')}
-                                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-3 py-2 text-xs font-semibold text-white transition-all shadow-sm shadow-blue-600/20"
+                                                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-blue-500 px-3 py-2 text-xs font-medium text-black transition-colors shadow-sm shadow-blue-600/20"
                                             >
-                                                <Scan className="h-3.5 w-3.5" />
-                                                <span>Take Attendance</span>
+                                                <Scan className="h-4 w-4" />
+                                                <span>Take attendance</span>
                                             </button>
 
                                             {isMarked ? (
                                                 <button
                                                     onClick={() => handleLaunchAttendance(batch, 'view')}
-                                                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors"
+                                                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 transition-colors"
                                                     title="View Today's Attendance List"
                                                 >
-                                                    <ClipboardCheck className="h-3.5 w-3.5 text-emerald-400" />
+                                                    <ClipboardCheck className="h-4 w-4 text-emerald-400" />
                                                     <span>Today</span>
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handleLaunchAttendance(batch, 'take')}
-                                                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors"
+                                                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 transition-colors"
                                                     title="Manual Roll Call"
                                                 >
-                                                    <Users className="h-3.5 w-3.5 text-zinc-400" />
+                                                    <Users className="h-4 w-4 text-zinc-400" />
                                                     <span>Manual</span>
                                                 </button>
                                             )}
@@ -536,7 +442,7 @@ const Dashboard = () => {
                 ) : (
                     <Card className="p-8 text-center border-dashed border-zinc-800">
                         <AlertCircle className="mx-auto h-12 w-12 text-amber-400/80 mb-3" />
-                        <h3 className="text-base font-semibold text-white">No Batches Assigned</h3>
+                        <h3 className="text-base font-medium text-white">No batches assigned</h3>
                         <p className="text-xs text-zinc-400 mt-1 max-w-md mx-auto">
                             The administration has not assigned any class sections or branches to your account
                             yet. Please contact the administrator to get batch access.
@@ -545,78 +451,74 @@ const Dashboard = () => {
                 )}
             </div>
 
-            {/* Quick Launch & Recent Activity Grid */}
+            {/* Quick Launch & Recent activity Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Quick Launch Action Cards (1 col) */}
                 <div className="space-y-3">
-                    <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-400">Quick Actions</h2>
+                    <h2 className="text-sm font-medium   text-zinc-400">Quick actions</h2>
 
                     <button
                         onClick={() => navigate('/attendance', { state: { tab: 'face' } })}
-                        className="w-full text-left rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 transition-all hover:border-blue-500/50 hover:bg-zinc-800/80 group flex items-center justify-between"
+                        className="w-full text-left rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 transition-colors hover:border-blue-500/50 hover:bg-zinc-800/80 group flex items-center justify-between"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-2.5 text-blue-400 group-hover:scale-105 transition-transform">
+                            <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-blue-400 group- transition-transform">
                                 <Scan className="h-5 w-5" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-semibold text-white">Face Recognition Camera</h4>
+                                <h4 className="text-sm font-medium text-white">Face recognition</h4>
                                 <p className="text-xs text-zinc-400">
                                     Real-time batch-scoped biometric scanning
                                 </p>
                             </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-colors" />
                     </button>
 
                     <button
                         onClick={() => navigate('/attendance', { state: { tab: 'take' } })}
-                        className="w-full text-left rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 transition-all hover:border-emerald-500/50 hover:bg-zinc-800/80 group flex items-center justify-between"
+                        className="w-full text-left rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 transition-colors hover:border-emerald-500/50 hover:bg-zinc-800/80 group flex items-center justify-between"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-emerald-400 group-hover:scale-105 transition-transform">
+                            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-400 group- transition-transform">
                                 <ClipboardCheck className="h-5 w-5" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-semibold text-white">Manual Roll Call</h4>
-                                <p className="text-xs text-zinc-400">One-click toggles for present/absent</p>
+                                <h4 className="text-sm font-medium text-white">Manual roll call</h4>
+                                <p className="text-xs text-zinc-400">Present, late, and absent marking</p>
                             </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-colors" />
                     </button>
 
                     <button
                         onClick={() => navigate('/attendance', { state: { tab: 'download' } })}
-                        className="w-full text-left rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 transition-all hover:border-purple-500/50 hover:bg-zinc-800/80 group flex items-center justify-between"
+                        className="w-full text-left rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 transition-colors hover:border-purple-500/50 hover:bg-zinc-800/80 group flex items-center justify-between"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-2.5 text-purple-400 group-hover:scale-105 transition-transform">
+                            <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-purple-400 group- transition-transform">
                                 <FileSpreadsheet className="h-5 w-5" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-semibold text-white">
-                                    Download Attendance Report
-                                </h4>
+                                <h4 className="text-sm font-medium text-white">Download attendance report</h4>
                                 <p className="text-xs text-zinc-400">
                                     Export clean CSV reports for your batches
                                 </p>
                             </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-colors" />
                     </button>
                 </div>
 
                 {/* Today's Recent Marked Attendance Feed (2 cols) */}
                 <div className="lg:col-span-2 space-y-3">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-400">
-                            Today's Marked Students (My Batches)
-                        </h2>
+                        <h2 className="text-sm font-medium   text-zinc-400">Today’s attendance</h2>
                         <Link
                             to="/attendance"
-                            className="text-xs font-semibold text-blue-400 hover:text-blue-300"
+                            className="text-xs font-medium text-blue-400 hover:text-blue-300"
                         >
-                            Open Today Tab
+                            Open today tab
                         </Link>
                     </div>
 
@@ -629,11 +531,11 @@ const Dashboard = () => {
                                         className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-3 hover:bg-zinc-800/60 transition-colors"
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 text-xs font-bold text-zinc-200">
+                                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 text-xs font-medium text-zinc-200">
                                                 {record.studentName?.charAt(0) || 'S'}
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-zinc-100 truncate">
+                                                <p className="text-sm font-medium text-zinc-100 truncate">
                                                     {record.studentName}
                                                 </p>
                                                 <p className="text-xs font-mono text-zinc-400 truncate">
@@ -643,12 +545,12 @@ const Dashboard = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-[11px] font-mono text-zinc-300 border border-zinc-700">
+                                            <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-xs font-mono text-zinc-300 border border-zinc-700">
                                                 {record.batchInfo}
                                             </span>
 
                                             <span
-                                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium border ${
                                                     record.status === 'present'
                                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                                         : 'bg-red-500/10 text-red-400 border-red-500/30'
@@ -661,7 +563,7 @@ const Dashboard = () => {
                                                     record.status?.slice(1)}
                                             </span>
 
-                                            <span className="text-[11px] text-zinc-500 font-mono hidden sm:inline">
+                                            <span className="text-xs text-zinc-500 font-mono hidden sm:inline">
                                                 {new Date(record.markedAt).toLocaleTimeString([], {
                                                     hour: '2-digit',
                                                     minute: '2-digit'

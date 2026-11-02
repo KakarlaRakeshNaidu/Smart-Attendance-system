@@ -1,3 +1,4 @@
+import { PageHeader } from '../common/Interface';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
@@ -60,18 +61,10 @@ export function State({ request }) {
 }
 function Shell({ title, children }) {
     return (
-        <main className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
-            <nav className="flex flex-wrap gap-4">
-                <Link to="/admin">Administrator Portal</Link>
-                <Link to="/admin/students">Student directory</Link>
-                <Link to="/admin/teachers">Teacher directory</Link>
-                <Link to="/admin/attendance">Attendance browsing</Link>
-                <Link to="/academic">Academic management</Link>
-                <Link to="/legacy-attendance">Legacy attendance</Link>
-            </nav>
-            <h1 className="text-2xl font-semibold">{title}</h1>
+        <div className="page-stack">
+            <PageHeader title={title} />
             {children}
-        </main>
+        </div>
     );
 }
 export function Pager({ pagination, onPage }) {
@@ -402,7 +395,7 @@ export function AdminDirectory() {
             <div className="flex gap-3">
                 {student && (
                     <Link className="btn-primary" to="/students/add">
-                        Add Student
+                        Add student
                     </Link>
                 )}
                 <button className="btn-secondary" onClick={() => setCreate(true)}>
@@ -531,7 +524,7 @@ export function AdminProfileDetail() {
                             </Link>
                         )}
                     </p>
-                    <h2 className="font-semibold">
+                    <h2 className="font-medium">
                         {kind === 'students' ? 'Student enrolments' : 'Teacher assignments'}
                     </h2>
                     {!d.offerings.length && <p>No linked course offerings.</p>}
@@ -633,7 +626,7 @@ export function AdminAttendance() {
                     {!request.data.items.length && <p>No matching attendance records.</p>}
                     {request.data.items.map((s) => (
                         <article key={s.source + s.id} className="card p-5 space-y-2">
-                            <h2 className="font-semibold">
+                            <h2 className="font-medium">
                                 {s.source === 'legacy'
                                     ? s.subject || 'Legacy attendance'
                                     : [s.offering?.course?.code, s.offering?.course?.name]

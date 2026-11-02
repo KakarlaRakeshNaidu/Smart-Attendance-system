@@ -1,3 +1,4 @@
+import { FormField as Field, Dialog as Modal } from '../common/Interface';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -43,37 +44,6 @@ const SUBSECTIONS = {
     C: ['C1', 'C2', 'C3'],
     D: ['D1', 'D2', 'D3']
 };
-
-const Field = ({ label, type = 'text', value, onChange, placeholder, required }) => (
-    <div>
-        <label className="mb-1 block text-xs font-medium text-zinc-400">
-            {label}
-            {required && ' *'}
-        </label>
-        <input
-            type={type}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            required={required}
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-white focus:outline-none"
-        />
-    </div>
-);
-
-const Modal = ({ title, onClose, children }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-        <div className="w-full max-w-lg rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-                <h3 className="font-semibold text-white">{title}</h3>
-                <button onClick={onClose} className="text-zinc-400 hover:text-white">
-                    <X className="h-5 w-5" />
-                </button>
-            </div>
-            <div className="p-5 max-h-[80vh] overflow-y-auto">{children}</div>
-        </div>
-    </div>
-);
 
 const StudentManagement = () => {
     const [students, setStudents] = useState([]);
@@ -214,7 +184,7 @@ const StudentManagement = () => {
                 academicYear: parseInt(form.academicYear, 10)
             });
             if (res.data.success) {
-                setMsg('Student updated successfully!');
+                setMsg('Student updated successfully');
                 fetchStudents();
                 setTimeout(close, 1200);
             } else {
@@ -271,7 +241,7 @@ const StudentManagement = () => {
                 newPassword: resetPwd
             });
             if (res.data.success) {
-                setMsg('Password reset successfully!');
+                setMsg('Password reset successfully');
                 setTimeout(close, 1200);
             } else {
                 setErr(res.data.message);
@@ -300,7 +270,7 @@ const StudentManagement = () => {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Students Management</h1>
+                    <h1 className="text-title font-medium text-white">Student management</h1>
                     <p className="text-sm text-zinc-400">
                         {total} {statusFilter === 'all' ? 'total' : statusFilter} student(s) enrolled
                     </p>
@@ -309,23 +279,23 @@ const StudentManagement = () => {
                     to="/admin/students/add"
                     className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-zinc-100 transition-colors shadow-sm"
                 >
-                    <UserPlus className="h-4 w-4" /> Register Student
+                    <UserPlus className="h-4 w-4" /> Register student
                 </Link>
             </div>
 
             {/* Combined Academic & Search Filter Bar */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4 space-y-3 shadow-sm">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/90 p-4 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                        <Filter className="h-3.5 w-3.5 text-zinc-400" />
-                        <span>Filter &amp; Search Students</span>
+                    <div className="flex items-center gap-2 text-xs font-medium   text-zinc-400">
+                        <Filter className="h-4 w-4 text-zinc-400" />
+                        <span>Filter & search students</span>
                     </div>
                     {hasActiveFilters && (
                         <button
                             onClick={resetFilters}
                             className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 font-medium"
                         >
-                            <X className="h-3 w-3" /> Clear Filters
+                            <X className="h-3 w-3" /> Clear filters
                         </button>
                     )}
                 </div>
@@ -365,7 +335,7 @@ const StudentManagement = () => {
                             onChange={(e) => setBranchFilter(e.target.value)}
                             className="w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
                         >
-                            <option value="all">All Branches</option>
+                            <option value="all">All branches</option>
                             {BRANCH_OPTIONS.map((b) => (
                                 <option key={b} value={b}>
                                     {b}
@@ -381,7 +351,7 @@ const StudentManagement = () => {
                             onChange={(e) => handleSectionFilterChange(e.target.value)}
                             className="w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
                         >
-                            <option value="all">All Sections</option>
+                            <option value="all">All sections</option>
                             {SECTION_OPTIONS.map((s) => (
                                 <option key={s} value={s}>
                                     Section {s}
@@ -423,7 +393,7 @@ const StudentManagement = () => {
                             <button
                                 key={status}
                                 onClick={() => setStatusFilter(status)}
-                                className={`rounded-lg px-3 py-1 text-xs font-medium capitalize transition-all ${
+                                className={`rounded-lg px-3 py-1 text-xs font-medium capitalize transition-colors ${
                                     statusFilter === status
                                         ? 'bg-zinc-700 text-white shadow-sm'
                                         : 'text-zinc-400 hover:text-zinc-200'
@@ -467,33 +437,33 @@ const StudentManagement = () => {
             )}
 
             {/* Table */}
-            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                         <thead className="border-b border-zinc-800 bg-zinc-950">
                             <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                                <th className="px-4 py-3 text-left text-xs font-medium   text-zinc-500">
                                     Name
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
-                                    Roll Number
+                                <th className="px-4 py-3 text-left text-xs font-medium   text-zinc-500">
+                                    Roll number
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
-                                    Academic Year
+                                <th className="px-4 py-3 text-left text-xs font-medium   text-zinc-500">
+                                    Academic year
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                                <th className="px-4 py-3 text-left text-xs font-medium   text-zinc-500">
                                     Branch
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                                <th className="px-4 py-3 text-left text-xs font-medium   text-zinc-500">
                                     Section
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                                <th className="px-4 py-3 text-left text-xs font-medium   text-zinc-500">
                                     Subsection
                                 </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                                <th className="px-4 py-3 text-left text-xs font-medium   text-zinc-500">
                                     Status
                                 </th>
-                                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">
+                                <th className="px-4 py-3 text-right text-xs font-medium   text-zinc-500">
                                     Actions
                                 </th>
                             </tr>
@@ -536,7 +506,7 @@ const StudentManagement = () => {
                                             </td>
 
                                             {/* Roll Number / Student ID */}
-                                            <td className="px-4 py-3 font-mono text-xs font-semibold text-zinc-300">
+                                            <td className="px-4 py-3 font-mono text-xs font-medium text-zinc-300">
                                                 {s.studentId}
                                             </td>
 
@@ -549,21 +519,21 @@ const StudentManagement = () => {
 
                                             {/* Branch */}
                                             <td className="px-4 py-3">
-                                                <span className="inline-flex rounded-md bg-purple-500/10 px-2 py-0.5 text-xs font-semibold text-purple-300 border border-purple-500/20">
+                                                <span className="inline-flex rounded-md bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300 border border-purple-500/20">
                                                     {s.branch || 'CSE'}
                                                 </span>
                                             </td>
 
                                             {/* Section */}
                                             <td className="px-4 py-3">
-                                                <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-zinc-800 text-xs font-bold text-zinc-200 border border-zinc-700">
+                                                <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-zinc-800 text-xs font-medium text-zinc-200 border border-zinc-700">
                                                     {s.section || 'A'}
                                                 </span>
                                             </td>
 
                                             {/* Subsection */}
                                             <td className="px-4 py-3">
-                                                <span className="inline-flex rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-mono font-bold text-amber-400 border border-amber-500/20">
+                                                <span className="inline-flex rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-mono font-medium text-amber-400 border border-amber-500/20">
                                                     {s.subsection || '–'}
                                                 </span>
                                             </td>
@@ -583,10 +553,10 @@ const StudentManagement = () => {
 
                                             {/* Actions */}
                                             <td className="px-4 py-3 text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
+                                                <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => openEdit(s)}
-                                                        title="Edit Student"
+                                                        title="Edit student"
                                                         className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
                                                     >
                                                         <Pencil className="h-4 w-4" />
@@ -617,7 +587,7 @@ const StudentManagement = () => {
                                                     </button>
                                                     <button
                                                         onClick={() => openDelete(s)}
-                                                        title="Delete Student"
+                                                        title="Delete student"
                                                         className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 transition-colors"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
@@ -760,12 +730,12 @@ const StudentManagement = () => {
 
             {/* Delete Confirmation Modal */}
             {modal === 'delete' && (
-                <Modal title="Delete Student" onClose={close}>
+                <Modal title="Delete student" onClose={close}>
                     <div className="space-y-4">
                         <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-400">
                             <AlertTriangle className="h-6 w-6 flex-shrink-0" />
                             <div className="text-sm">
-                                <p className="font-semibold text-white">Permanently Delete Student?</p>
+                                <p className="font-medium text-white">Permanently Delete Student?</p>
                                 <p className="text-xs text-red-300 mt-1">
                                     This action cannot be undone. It will permanently remove:
                                 </p>
@@ -820,7 +790,7 @@ const StudentManagement = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <Trash2 className="h-4 w-4" /> Delete Student
+                                        <Trash2 className="h-4 w-4" /> Delete student
                                     </>
                                 )}
                             </button>

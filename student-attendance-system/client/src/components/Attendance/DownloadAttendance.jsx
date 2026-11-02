@@ -83,7 +83,7 @@ const DownloadAttendance = () => {
         <div className="max-w-md mx-auto">
             <h2 className="text-section mb-4 flex items-center text-zinc-100">
                 <Download className="h-5 w-5 mr-2 text-zinc-100" />
-                Download Attendance
+                Download attendance
             </h2>
 
             {/* Tabs */}
@@ -97,7 +97,7 @@ const DownloadAttendance = () => {
                     }`}
                 >
                     <Calendar className="h-4 w-4 inline mr-2" />
-                    Single Date
+                    Single date
                 </button>
                 <button
                     onClick={() => setActiveTab('range')}
@@ -108,7 +108,7 @@ const DownloadAttendance = () => {
                     }`}
                 >
                     <Calendar className="h-4 w-4 inline mr-2" />
-                    Date Range
+                    Date range
                 </button>
             </div>
 
@@ -116,7 +116,7 @@ const DownloadAttendance = () => {
                 {/* Single Date Tab */}
                 {activeTab === 'single' && (
                     <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-2">Select Date</label>
+                        <label className="block text-sm font-medium text-zinc-300 mb-2">Select date</label>
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
                             <input
@@ -133,7 +133,7 @@ const DownloadAttendance = () => {
                 {activeTab === 'range' && (
                     <>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">From Date</label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">From date</label>
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
                                 <input
@@ -145,7 +145,7 @@ const DownloadAttendance = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">To Date</label>
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">To date</label>
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
                                 <input

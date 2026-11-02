@@ -1,72 +1,103 @@
 /** @type {import('tailwindcss').Config} */
+const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+const accent = {
+    50: token('accent-soft'),
+    100: token('accent-soft'),
+    200: token('accent'),
+    300: token('accent'),
+    400: token('accent'),
+    500: token('accent-rgb'),
+    600: token('accent-rgb'),
+    700: token('accent-rgb'),
+    800: token('accent-soft'),
+    900: token('accent-soft'),
+    950: token('accent-soft')
+};
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: 'rgb(var(--action) / <alpha-value>)',
-        focus: 'rgb(var(--focus) / <alpha-value>)',
-        accent: 'rgb(var(--hover) / <alpha-value>)',
-        success: '#10b981',
-        danger: '#ef4444',
-        warning: '#f59e0b',
-        bgSoft: 'rgb(var(--page) / <alpha-value>)',
-        card: 'rgb(var(--surface) / <alpha-value>)',
-        // Light-only tint variables; fallbacks retain the original Dark colours.
-        blue: { 500: 'rgb(var(--info-tint, 59 130 246) / <alpha-value>)' },
-        purple: { 500: 'rgb(var(--role-accent-tint, 168 85 247) / <alpha-value>)' },
-        gray: {
-          50: 'rgb(var(--page) / <alpha-value>)',
-          100: 'rgb(var(--raised) / <alpha-value>)',
-          200: 'rgb(var(--border) / <alpha-value>)',
-          300: 'rgb(var(--border-strong) / <alpha-value>)',
-          400: 'rgb(var(--subtle) / <alpha-value>)',
-          500: 'rgb(var(--muted) / <alpha-value>)',
-          600: 'rgb(var(--secondary) / <alpha-value>)',
-          700: 'rgb(var(--secondary) / <alpha-value>)',
-          800: 'rgb(var(--text) / <alpha-value>)'
-        },
-        zinc: {
-          50: 'rgb(var(--text) / <alpha-value>)',
-          100: 'rgb(var(--text) / <alpha-value>)',
-          200: 'rgb(var(--secondary) / <alpha-value>)',
-          300: 'rgb(var(--secondary) / <alpha-value>)',
-          400: 'rgb(var(--muted) / <alpha-value>)',
-          500: 'rgb(var(--subtle) / <alpha-value>)',
-          600: 'rgb(var(--border-strong) / <alpha-value>)',
-          700: 'rgb(var(--hover) / <alpha-value>)',
-          800: 'rgb(var(--raised) / <alpha-value>)',
-          900: 'rgb(var(--surface) / <alpha-value>)',
-          950: 'rgb(var(--page) / <alpha-value>)'
+    content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+    theme: {
+        extend: {
+            fontFamily: {
+                sans: ['IBM Plex Sans', 'Segoe UI', 'sans-serif'],
+                mono: ['IBM Plex Mono', 'Consolas', 'monospace']
+            },
+            colors: {
+                primary: token('accent-rgb'),
+                focus: token('accent'),
+                accent: token('accent-soft'),
+                success: token('success'),
+                danger: token('error'),
+                warning: token('warning'),
+                bgSoft: token('page'),
+                card: token('surface'),
+                zinc: {
+                    50: token('text'),
+                    100: token('text'),
+                    200: token('secondary'),
+                    300: token('secondary'),
+                    400: token('muted'),
+                    500: token('muted'),
+                    600: token('subtle'),
+                    700: token('hover'),
+                    800: token('raised'),
+                    900: token('surface'),
+                    950: token('page')
+                },
+                gray: {
+                    50: token('page'),
+                    100: token('raised'),
+                    200: token('border'),
+                    300: token('border-strong'),
+                    400: token('muted'),
+                    500: token('muted'),
+                    600: token('secondary'),
+                    700: token('secondary'),
+                    800: token('text'),
+                    900: token('text')
+                },
+                blue: accent,
+                indigo: accent,
+                purple: accent,
+                violet: accent,
+                cyan: accent
+            },
+            backgroundColor: {
+                white: token('action'),
+                emerald: { 900: token('success-surface'), 950: token('success-surface') },
+                green: { 900: token('success-surface'), 950: token('success-surface') },
+                red: { 900: token('error-surface'), 950: token('error-surface') },
+                amber: { 900: token('warning-surface'), 950: token('warning-surface') }
+            },
+            borderColor: {
+                zinc: {
+                    600: token('border-strong'),
+                    700: token('border-strong'),
+                    800: token('border'),
+                    900: token('border')
+                }
+            },
+            textColor: {
+                white: token('text'),
+                black: token('on-action'),
+                media: '#ffffff',
+                ink: '#111716',
+                zinc: { 600: token('muted') },
+                emerald: { 200: token('success'), 300: token('success'), 400: token('success') },
+                green: { 200: token('success'), 300: token('success'), 400: token('success') },
+                red: { 200: token('error'), 300: token('error'), 400: token('error') },
+                amber: { 200: token('warning'), 300: token('warning'), 400: token('warning') },
+                yellow: { 300: token('warning'), 400: token('warning') }
+            },
+            transitionTimingFunction: { DEFAULT: 'cubic-bezier(0.22,1,0.36,1)' },
+            boxShadow: {
+                sm: '0 1px 2px rgb(0 0 0 / .035)',
+                DEFAULT: '0 2px 8px rgb(0 0 0 / .05)',
+                md: '0 4px 16px rgb(0 0 0 / .06)',
+                lg: '0 8px 24px rgb(0 0 0 / .08)',
+                xl: '0 12px 32px rgb(0 0 0 / .1)',
+                '2xl': '0 16px 48px rgb(0 0 0 / .12)'
+            }
         }
-      },
-      borderColor: {
-        zinc: { 700: 'rgb(var(--border-strong) / <alpha-value>)', 800: 'rgb(var(--border) / <alpha-value>)' }
-      },
-      backgroundColor: {
-        white: 'rgb(var(--action) / <alpha-value>)',
-        green: { 900: 'rgb(var(--success-surface) / <alpha-value>)', 950: 'rgb(var(--success-surface) / <alpha-value>)' },
-        emerald: { 900: 'rgb(var(--success-surface) / <alpha-value>)', 950: 'rgb(var(--success-surface) / <alpha-value>)' },
-        red: { 950: 'rgb(var(--error-surface) / <alpha-value>)' }
-      },
-      textColor: {
-        zinc: { 600: 'rgb(var(--subtle) / <alpha-value>)' },
-        white: 'rgb(var(--text) / <alpha-value>)',
-        black: 'rgb(var(--on-action) / <alpha-value>)',
-        media: '#ffffff',
-        ink: '#09090b',
-        emerald: { 300: 'rgb(var(--success) / <alpha-value>)', 400: 'rgb(var(--success) / <alpha-value>)' },
-        green: { 200: 'rgb(var(--success) / <alpha-value>)', 300: 'rgb(var(--success) / <alpha-value>)', 400: 'rgb(var(--success) / <alpha-value>)' },
-        red: { 300: 'rgb(var(--error) / <alpha-value>)', 400: 'rgb(var(--error) / <alpha-value>)' },
-        amber: { 300: 'rgb(var(--warning) / <alpha-value>)', 400: 'rgb(var(--warning) / <alpha-value>)' },
-        yellow: { 300: 'rgb(var(--warning) / <alpha-value>)', 400: 'rgb(var(--warning) / <alpha-value>)' },
-        blue: { 300: 'rgb(var(--info) / <alpha-value>)', 400: 'rgb(var(--info) / <alpha-value>)' },
-        purple: { 300: 'rgb(var(--purple) / <alpha-value>)', 400: 'rgb(var(--purple) / <alpha-value>)' }
-      }
     },
-  },
-  plugins: [],
-}
+    plugins: []
+};

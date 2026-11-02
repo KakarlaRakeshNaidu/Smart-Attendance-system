@@ -1,21 +1,8 @@
+import { Dialog as Modal } from '../common/Interface';
 import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { Loader2, Filter, Pencil, X } from 'lucide-react';
-
-const Modal = ({ title, onClose, children }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-        <div className="w-full max-w-lg rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-                <h3 className="font-semibold text-white">{title}</h3>
-                <button onClick={onClose} className="text-zinc-400 hover:text-white transition-colors">
-                    <X className="h-5 w-5" />
-                </button>
-            </div>
-            <div className="max-h-[80vh] overflow-y-auto p-5">{children}</div>
-        </div>
-    </div>
-);
 
 const AdminAttendance = () => {
     const [records, setRecords] = useState([]);
@@ -115,7 +102,7 @@ const AdminAttendance = () => {
     return (
         <div className="space-y-5">
             <div>
-                <h1 className="text-2xl font-bold text-white">Attendance Records</h1>
+                <h1 className="text-title font-medium text-white">Attendance records</h1>
                 <p className="text-sm text-zinc-400">{total} session(s) across institution</p>
                 <Link className="text-sm underline" to="/admin/attendance-browser">
                     Browse scheduled, draft and legacy attendance
@@ -132,7 +119,7 @@ const AdminAttendance = () => {
                     }}
                     className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-white focus:outline-none"
                 >
-                    <option value="">All Teachers</option>
+                    <option value="">All teachers</option>
                     {teachers.map((t) => (
                         <option key={t.id || t._id} value={t.id || t._id}>
                             {t.name} {t.email ? `(${t.email})` : ''}
@@ -176,13 +163,13 @@ const AdminAttendance = () => {
                         }}
                         className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
                     >
-                        Clear Filters
+                        Clear filters
                     </button>
                 )}
             </div>
 
             {/* Table (Horizontal scroll on mobile) */}
-            <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-900 shadow-sm">
+            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900 shadow-sm">
                 <table className="min-w-[780px] w-full text-sm">
                     <thead className="border-b border-zinc-800 bg-zinc-950">
                         <tr>
@@ -198,7 +185,7 @@ const AdminAttendance = () => {
                             ].map((h) => (
                                 <th
                                     key={h}
-                                    className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500"
+                                    className="px-4 py-3 text-left text-xs font-medium   text-zinc-500"
                                 >
                                     {h}
                                 </th>
@@ -307,7 +294,7 @@ const AdminAttendance = () => {
                                             {sessionDisplay}
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap">
-                                            <span className="font-semibold text-emerald-400">
+                                            <span className="font-medium text-emerald-400">
                                                 {presentCount}P
                                             </span>
                                             <span className="mx-1 text-zinc-600">/</span>
@@ -362,7 +349,7 @@ const AdminAttendance = () => {
                 <button
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
-                    className="rounded-xl border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500 transition-colors"
+                    className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500 transition-colors"
                 >
                     ← Prev
                 </button>
@@ -370,7 +357,7 @@ const AdminAttendance = () => {
                 <button
                     disabled={records.length < 25}
                     onClick={() => setPage((p) => p + 1)}
-                    className="rounded-xl border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500 transition-colors"
+                    className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-40 hover:border-zinc-500 transition-colors"
                 >
                     Next →
                 </button>
@@ -432,7 +419,7 @@ const AdminAttendance = () => {
                                                     [r.studentRollNo]: e.target.value
                                                 }))
                                             }
-                                            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white focus:border-white focus:outline-none"
+                                            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-medium text-white focus:border-white focus:outline-none"
                                         >
                                             <option value="present">Present</option>
                                             <option value="absent">Absent</option>
@@ -461,7 +448,7 @@ const AdminAttendance = () => {
                         <button
                             type="submit"
                             disabled={submitting || !correcting.records || correcting.records.length === 0}
-                            className="w-full rounded-xl bg-white py-2 text-sm font-semibold text-black hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                            className="w-full rounded-xl bg-white py-2 text-sm font-medium text-black hover:bg-zinc-200 transition-colors disabled:opacity-50"
                         >
                             {submitting ? 'Saving…' : 'Save Correction'}
                         </button>

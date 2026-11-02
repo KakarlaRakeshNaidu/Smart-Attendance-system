@@ -10,12 +10,8 @@ const Loader = ({ size = 'default', text = 'Loading...' }) => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[200px]">
-            <Loader2
-                className={`${sizeClasses[size]} text-zinc-200 animate-spin`}
-            />
-            {text && (
-                <p className="mt-3 text-zinc-400">{text}</p>
-            )}
+            <Loader2 className={`${sizeClasses[size]} text-zinc-200 animate-spin`} />
+            {text && <p className="mt-3 text-zinc-400">{text}</p>}
         </div>
     );
 };

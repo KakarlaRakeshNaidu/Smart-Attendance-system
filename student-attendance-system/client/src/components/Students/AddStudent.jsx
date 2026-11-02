@@ -117,7 +117,7 @@ const AddStudent = () => {
         setFaceImage(imageData);
         setFacePreview(imageData);
         stopCamera();
-        toast.success('Face captured successfully!');
+        toast.success('Face captured successfully');
     }, [stopCamera]);
 
     const clearFaceImage = () => {
@@ -138,7 +138,7 @@ const AddStudent = () => {
                 const imageData = event.target.result;
                 setFaceImage(imageData);
                 setFacePreview(imageData);
-                toast.success('Face image uploaded successfully!');
+                toast.success('Face image uploaded successfully');
             };
             reader.onerror = () => {
                 toast.error('Failed to read image file');
@@ -163,7 +163,7 @@ const AddStudent = () => {
             const result = await studentService.addStudent(data);
 
             if (result.faceWarning) {
-                toast.success('Student added successfully!');
+                toast.success('Student added successfully');
                 toast.error(`Face not registered: ${result.faceWarning}`, { duration: 5000 });
             } else {
                 toast.success(
@@ -180,7 +180,7 @@ const AddStudent = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-6 page-enter">
             <div>
                 <Link
                     to="/students"
@@ -191,8 +191,8 @@ const AddStudent = () => {
                 </Link>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
-                <h1 className="text-title mb-6">Add New Student</h1>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
+                <h1 className="text-title text-title mb-6">Add student</h1>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Profile Photo */}
@@ -204,9 +204,9 @@ const AddStudent = () => {
                                 <User className="h-12 w-12 text-zinc-500" />
                             )}
                         </div>
-                        <label className="cursor-pointer flex items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all">
+                        <label className="cursor-pointer flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors">
                             <Upload className="h-4 w-4" />
-                            <span>Upload Photo</span>
+                            <span>Upload photo</span>
                             <input
                                 type="file"
                                 accept="image/*"
@@ -217,7 +217,7 @@ const AddStudent = () => {
                     </div>
 
                     {/* Face Recognition Capture */}
-                    <div className="rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 p-4">
+                    <div className="rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 p-4">
                         <h3 className="text-sm font-medium text-zinc-300 mb-3 flex items-center gap-2">
                             <Camera className="h-4 w-4" />
                             Face Recognition Registration (Optional)
@@ -237,7 +237,7 @@ const AddStudent = () => {
                                     <button
                                         type="button"
                                         onClick={flipCamera}
-                                        className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-2xl border border-zinc-600 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-200 backdrop-blur transition hover:bg-zinc-800 md:hidden"
+                                        className="absolute bottom-3 right-3 flex items-center gap-2 rounded-xl border border-zinc-600 bg-zinc-900/80 px-3 py-2 text-xs font-medium text-zinc-200  transition hover:bg-zinc-800 md:hidden"
                                         aria-label="Flip camera"
                                     >
                                         <FlipHorizontal className="h-4 w-4" />
@@ -251,7 +251,7 @@ const AddStudent = () => {
                                         className="btn-primary flex-1 flex items-center justify-center gap-2"
                                     >
                                         <Camera className="h-4 w-4" />
-                                        Capture Face
+                                        Capture face
                                     </button>
                                     <button
                                         type="button"
@@ -274,7 +274,7 @@ const AddStudent = () => {
                                     <div className="absolute top-2 right-2">
                                         <span className="bg-emerald-600 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
                                             <Check className="h-3 w-3" />
-                                            Face Captured
+                                            Face captured
                                         </span>
                                     </div>
                                 </div>
@@ -306,11 +306,11 @@ const AddStudent = () => {
                                         className="flex-1 py-5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50 transition flex flex-col items-center gap-2 text-zinc-500 hover:text-zinc-300"
                                     >
                                         <Camera className="h-8 w-8" />
-                                        <span className="text-sm">Use Camera</span>
+                                        <span className="text-sm">Use camera</span>
                                     </button>
                                     <label className="flex-1 py-5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-emerald-700 hover:bg-emerald-900/10 transition flex flex-col items-center gap-2 text-zinc-500 hover:text-emerald-400 cursor-pointer">
                                         <ImagePlus className="h-8 w-8" />
-                                        <span className="text-sm">Upload Image</span>
+                                        <span className="text-sm">Upload image</span>
                                         <input
                                             type="file"
                                             accept="image/*"

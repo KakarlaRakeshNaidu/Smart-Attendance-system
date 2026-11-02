@@ -186,25 +186,25 @@ const TakeAttendance = ({ onAttendanceMarked, selectedBatch }) => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
                     <p className="text-sm text-zinc-400">
-                        <span className="font-semibold text-emerald-300">{presentCount} Present</span>
+                        <span className="font-medium text-emerald-300">{presentCount} Present</span>
                         {' | '}
-                        <span className="font-semibold text-red-300">{absentCount} Absent</span>
+                        <span className="font-medium text-red-300">{absentCount} Absent</span>
                     </p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
                     <button
                         type="button"
                         onClick={markAllPresent}
-                        className="flex-1 sm:flex-none justify-center flex items-center rounded-xl bg-emerald-500/20 px-3 py-2 sm:py-1.5 text-sm font-medium text-emerald-300 transition-all duration-200 hover:bg-emerald-500/30"
+                        className="flex-1 sm:flex-none justify-center flex items-center rounded-xl bg-emerald-500/20 px-3 py-2 sm:py-2 text-sm font-medium text-emerald-300 transition-colors duration-200 hover:bg-emerald-500/30"
                     >
-                        Mark All Present
+                        Mark all present
                     </button>
                     <button
                         type="button"
                         onClick={markAllAbsent}
-                        className="flex-1 sm:flex-none justify-center flex items-center rounded-xl bg-red-500/20 px-3 py-2 sm:py-1.5 text-sm font-medium text-red-300 transition-all duration-200 hover:bg-red-500/30"
+                        className="flex-1 sm:flex-none justify-center flex items-center rounded-xl bg-red-500/20 px-3 py-2 sm:py-2 text-sm font-medium text-red-300 transition-colors duration-200 hover:bg-red-500/30"
                     >
-                        Mark All Absent
+                        Mark all absent
                     </button>
                 </div>
             </div>
@@ -217,7 +217,7 @@ const TakeAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                         return (
                             <div
                                 key={studentKey}
-                                className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all duration-200 ${
+                                className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors duration-200 ${
                                     isPresent
                                         ? 'border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20'
                                         : attendance[studentKey] === 'absent'
@@ -234,7 +234,7 @@ const TakeAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                         }`}
                                     >
                                         <span
-                                            className={`font-semibold ${
+                                            className={`font-medium ${
                                                 isPresent ? 'text-emerald-300' : 'text-red-300'
                                             }`}
                                         >
@@ -242,7 +242,7 @@ const TakeAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                                         </span>
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-zinc-100">{student.name}</p>
+                                        <p className="font-medium text-zinc-100">{student.name}</p>
                                         <p className="text-sm font-mono text-zinc-400">
                                             ID: {student.studentId}
                                         </p>
@@ -286,7 +286,7 @@ const TakeAttendance = ({ onAttendanceMarked, selectedBatch }) => {
                     ) : (
                         <>
                             <Save className="h-5 w-5" />
-                            Save Attendance
+                            Save attendance
                         </>
                     )}
                 </button>

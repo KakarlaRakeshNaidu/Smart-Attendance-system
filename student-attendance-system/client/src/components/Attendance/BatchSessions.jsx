@@ -47,7 +47,7 @@ export default function BatchSessions({ selectedBatch, refreshKey, onChange }) {
     return (
         <section className="card p-4 space-y-3">
             <div>
-                <h2 className="font-semibold">Today’s batch sessions</h2>
+                <h2 className="font-medium">Today’s batch sessions</h2>
                 <p className="text-xs text-zinc-400 mt-1">
                     Save marks, then finalise the session to include it in percentages, alerts and semester
                     reports.

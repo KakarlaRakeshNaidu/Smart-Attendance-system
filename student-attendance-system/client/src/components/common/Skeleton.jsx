@@ -12,7 +12,7 @@ const Skeleton = ({ className = '', style }) => (
 export const SkeletonStatCards = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
                 <div className="flex items-start justify-between">
                     <Skeleton className="h-9 w-9 rounded-xl" />
                     <Skeleton className="h-4 w-4 rounded" />
@@ -27,7 +27,7 @@ export const SkeletonStatCards = () => (
 
 /** Chart area skeleton */
 export const SkeletonChart = () => (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <div className="flex items-center justify-between mb-6">
             <Skeleton className="h-5 w-36 rounded-lg" />
             <Skeleton className="h-3 w-20 rounded-lg" />
@@ -44,7 +44,7 @@ export const SkeletonChart = () => (
 
 /** Table row skeletons for StudentList */
 export const SkeletonTableRows = ({ rows = 6 }) => (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="border-b border-zinc-800 bg-zinc-900/70 px-4 py-3 flex gap-6">
             {[40, 120, 160, 80, 100].map((w, i) => (
                 <Skeleton key={i} className="h-3 rounded-lg" style={{ width: w }} />
@@ -53,7 +53,7 @@ export const SkeletonTableRows = ({ rows = 6 }) => (
         {[...Array(rows)].map((_, i) => (
             <div
                 key={i}
-                className={`flex items-center gap-6 px-4 py-3.5 border-b border-zinc-800 ${i % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-950/40'}`}
+                className={`flex items-center gap-6 px-4 py-4 border-b border-zinc-800 ${i % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-950/40'}`}
             >
                 <Skeleton className="h-10 w-10 rounded-xl flex-shrink-0" />
                 <Skeleton className="h-3 w-28 rounded-lg" />
@@ -69,7 +69,10 @@ export const SkeletonTableRows = ({ rows = 6 }) => (
 export const SkeletonList = ({ rows = 5 }) => (
     <div className="space-y-3">
         {[...Array(rows)].map((_, i) => (
-            <div key={i} className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 p-3">
+            <div
+                key={i}
+                className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950 p-3"
+            >
                 <div className="flex items-center gap-3">
                     <Skeleton className="h-10 w-10 rounded-xl flex-shrink-0" />
                     <div className="space-y-2">

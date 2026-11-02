@@ -1,11 +1,8 @@
 import React from 'react';
-
-const Card = ({ className = '', children }) => {
+export default function Card({ className = '', children, ...props }) {
     return (
-        <div className={`rounded-2xl border border-zinc-800 bg-zinc-900 shadow-sm transition-all duration-200 ${className}`}>
+        <div {...props} className={'card ' + className}>
             {children}
         </div>
     );
-};
-
-export default Card;
+}

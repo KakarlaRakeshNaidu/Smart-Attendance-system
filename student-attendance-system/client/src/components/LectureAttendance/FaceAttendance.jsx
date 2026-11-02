@@ -188,16 +188,16 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
             {faceApiStatus === false && (
                 <div
                     role="alert"
-                    className="mb-4 rounded-2xl border border-amber-900 bg-amber-500/10 p-4 text-amber-300"
+                    className="mb-4 rounded-xl border border-amber-900 bg-amber-500/10 p-4 text-amber-300"
                 >
-                    <p className="font-semibold">Face Recognition API Not Available</p>
+                    <p className="font-medium">Face recognition API not available</p>
                     <p>{faceError}</p>
                     <p className="text-sm mt-1">
                         Camera preview is still available. Recognition needs the face service; Manual
                         attendance remains usable.
                     </p>
                     <button onClick={checkFaceApiStatus} className="btn-secondary mt-3">
-                        Retry Connection
+                        Retry connection
                     </button>
                 </div>
             )}
@@ -215,22 +215,22 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                 <button
                     disabled={loading}
                     onClick={() => setMode('single')}
-                    className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${mode === 'single' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}
+                    className={`flex-1 rounded-xl border px-4 py-3 font-medium transition-colors duration-200 flex items-center justify-center gap-2 ${mode === 'single' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}
                 >
                     <User className="h-5 w-5" />
-                    Single Face
+                    Single face
                 </button>
                 <button
                     disabled={loading}
                     onClick={() => setMode('multiple')}
-                    className={`flex-1 rounded-2xl border px-4 py-2.5 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${mode === 'multiple' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}
+                    className={`flex-1 rounded-xl border px-4 py-3 font-medium transition-colors duration-200 flex items-center justify-center gap-2 ${mode === 'multiple' ? 'border-zinc-700 bg-zinc-800 text-white' : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}`}
                 >
                     <Users className="h-5 w-5" />
-                    Multiple Faces
+                    Multiple faces
                 </button>
             </div>
 
-            <div className="relative mb-4 aspect-video overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+            <div className="relative mb-4 aspect-video overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
                 <video
                     ref={videoRef}
                     autoPlay
@@ -249,7 +249,7 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                 {loading && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="text-center text-media">
-                            <Scan className="h-12 w-12 mx-auto mb-2 animate-pulse" />
+                            <Scan className="h-12 w-12 mx-auto mb-2 " />
                             <p>Scanning faces...</p>
                         </div>
                     </div>
@@ -275,7 +275,7 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                         className="flex-1 btn-primary flex items-center justify-center gap-2"
                     >
                         <Camera className="h-5 w-5" />
-                        Start Camera
+                        Start camera
                     </button>
                 ) : (
                     <>
@@ -303,7 +303,7 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
 
             {lastResult && (
                 <div
-                    className={`mt-4 rounded-2xl border p-4 ${lastResult.success ? 'border-emerald-900 bg-emerald-500/10' : 'border-red-900 bg-red-500/10'}`}
+                    className={`mt-4 rounded-xl border p-4 ${lastResult.success ? 'border-emerald-900 bg-emerald-500/10' : 'border-red-900 bg-red-500/10'}`}
                 >
                     <div className="flex items-start gap-3">
                         {lastResult.success ? (
@@ -313,18 +313,18 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                         )}
                         <div>
                             <p
-                                className={`font-semibold ${lastResult.success ? 'text-emerald-300' : 'text-red-300'}`}
+                                className={`font-medium ${lastResult.success ? 'text-emerald-300' : 'text-red-300'}`}
                             >
                                 {lastResult.message}
                             </p>
 
                             {lastResult.success && mode === 'single' && lastResult.student && (
                                 <p className="mt-1 text-sm text-zinc-300">
-                                    Student: <span className="font-semibold">{lastResult.student.name}</span>{' '}
+                                    Student: <span className="font-medium">{lastResult.student.name}</span>{' '}
                                     (ID: {lastResult.student.studentId})
                                     <br />
                                     Confidence:{' '}
-                                    <span className="font-semibold">
+                                    <span className="font-medium">
                                         {(lastResult.student.confidence * 100).toFixed(1)}%
                                     </span>
                                 </p>
@@ -337,7 +337,7 @@ const FaceAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                                     </p>
                                     {lastResult.markedStudents && lastResult.markedStudents.length > 0 && (
                                         <div className="mt-1">
-                                            <p className="font-semibold text-emerald-300">Marked Present:</p>
+                                            <p className="font-medium text-emerald-300">Marked Present:</p>
                                             <ul className="list-disc list-inside">
                                                 {lastResult.markedStudents.map((s, i) => (
                                                     <li key={i}>

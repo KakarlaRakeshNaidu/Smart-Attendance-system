@@ -21,7 +21,7 @@ const ProgressBar = ({ pct, threshold }) => {
     return (
         <div className="relative h-2 w-full overflow-hidden rounded-full bg-zinc-800">
             <div
-                className={`h-full rounded-full transition-all duration-700 ${color}`}
+                className={`h-full rounded-full transition-colors duration-700 ${color}`}
                 style={{ width: `${Math.min(pct, 100)}%` }}
             />
             {/* Threshold marker */}
@@ -45,7 +45,7 @@ const SubjectSection = ({
     const [open, setOpen] = useState(false);
 
     return (
-        <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+        <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
             {/* Header */}
             <button
                 onClick={() => setOpen((o) => !o)}
@@ -53,7 +53,7 @@ const SubjectSection = ({
             >
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-white">{subject?.name}</p>
+                        <p className="font-medium text-white">{subject?.name}</p>
                         <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
                             {subject?.code}
                         </span>
@@ -95,7 +95,7 @@ const SubjectSection = ({
                     ) : (
                         <div className="divide-y divide-zinc-800/60 max-h-96 overflow-y-auto">
                             {records.map((r, i) => (
-                                <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                                <div key={i} className="flex items-center gap-3 px-4 py-3">
                                     {statusIcon(r.status)}
                                     <div className="flex-1">
                                         <p className="text-sm text-zinc-200">
@@ -157,7 +157,7 @@ const StudentAttendanceView = () => {
     return (
         <div className="space-y-5">
             <div>
-                <h1 className="text-2xl font-bold text-white">My Attendance</h1>
+                <h1 className="text-title font-medium text-white">My attendance</h1>
                 <p className="text-sm text-zinc-400">Subject-wise attendance records</p>
             </div>
 
@@ -168,7 +168,7 @@ const StudentAttendanceView = () => {
             )}
 
             {attendance.length === 0 && !error ? (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900 py-16 text-center">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900 py-16 text-center">
                     <CheckCircle2 className="mx-auto h-10 w-10 text-zinc-600" />
                     <p className="mt-4 text-zinc-400">No attendance records yet.</p>
                     <p className="text-sm text-zinc-500">

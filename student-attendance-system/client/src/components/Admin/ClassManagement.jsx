@@ -1,37 +1,7 @@
+import { FormField as Field, Dialog as Modal } from '../common/Interface';
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { Plus, Pencil, Archive, X, Loader2 } from 'lucide-react';
-
-const Field = ({ label, type = 'text', value, onChange, placeholder, required }) => (
-    <div>
-        <label className="mb-1 block text-xs font-medium text-zinc-400">
-            {label}
-            {required && ' *'}
-        </label>
-        <input
-            type={type}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            required={required}
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-white focus:outline-none"
-        />
-    </div>
-);
-
-const Modal = ({ title, onClose, children }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-        <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-                <h3 className="font-semibold text-white">{title}</h3>
-                <button onClick={onClose} className="text-zinc-400 hover:text-white">
-                    <X className="h-5 w-5" />
-                </button>
-            </div>
-            <div className="p-5">{children}</div>
-        </div>
-    </div>
-);
 
 const emptyForm = {
     name: '',
@@ -101,7 +71,7 @@ const ClassManagement = () => {
         try {
             const r = await api.post('/admin/classes', form);
             if (r.data.success) {
-                setMsg('Class created!');
+                setMsg('Class created');
                 fetchClasses();
                 setTimeout(close, 1200);
             } else setErr(r.data.message);
@@ -140,7 +110,7 @@ const ClassManagement = () => {
         }
     };
 
-    const ClassForm = ({ onSubmit, btnLabel }) => (
+    const renderClassForm = ({ onSubmit, btnLabel }) => (
         <form onSubmit={onSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
                 <Field
@@ -196,14 +166,14 @@ const ClassManagement = () => {
         <div className="space-y-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Classes & Batches</h1>
+                    <h1 className="text-title font-medium text-white">Classes & batches</h1>
                     <p className="text-sm text-zinc-400">{classes.length} class(es)</p>
                 </div>
                 <button
                     onClick={openCreate}
                     className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-zinc-100"
                 >
-                    <Plus className="h-4 w-4" /> New Class
+                    <Plus className="h-4 w-4" /> New class
                 </button>
             </div>
 
@@ -220,25 +190,27 @@ const ClassManagement = () => {
                     classes.map((c) => (
                         <div
                             key={c.id || c._id}
-                            className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+                            className="rounded-xl border border-zinc-800 bg-zinc-900 p-4"
                         >
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <p className="font-semibold text-white">{c.name}</p>
+                                    <p className="font-medium text-white">{c.name}</p>
                                     <p className="text-xs font-mono text-zinc-400">{c.code}</p>
                                 </div>
                                 <div className="flex gap-1">
                                     <button
+                                        aria-label="Edit"
                                         onClick={() => openEdit(c)}
                                         className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white"
                                     >
-                                        <Pencil className="h-3.5 w-3.5" />
+                                        <Pencil className="h-4 w-4" />
                                     </button>
                                     <button
+                                        aria-label="Archive class"
                                         onClick={() => handleArchive(c)}
                                         className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-red-400"
                                     >
-                                        <Archive className="h-3.5 w-3.5" />
+                                        <Archive className="h-4 w-4" />
                                     </button>
                                 </div>
                             </div>
@@ -275,13 +247,13 @@ const ClassManagement = () => {
             </div>
 
             {modal === 'create' && (
-                <Modal title="New Class" onClose={close}>
-                    <ClassForm onSubmit={handleCreate} btnLabel="Create Class" />
+                <Modal title="New class" onClose={close}>
+                    {renderClassForm({ onSubmit: handleCreate, btnLabel: 'Create Class' })}
                 </Modal>
             )}
             {modal === 'edit' && (
-                <Modal title="Edit Class" onClose={close}>
-                    <ClassForm onSubmit={handleEdit} btnLabel="Save Changes" />
+                <Modal title="Edit class" onClose={close}>
+                    {renderClassForm({ onSubmit: handleEdit, btnLabel: 'Save Changes' })}
                 </Modal>
             )}
         </div>

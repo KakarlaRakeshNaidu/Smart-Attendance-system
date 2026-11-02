@@ -78,7 +78,7 @@ const EditProfile = () => {
                 description: formData.description
             });
             updateTeacher(response.teacher);
-            toast.success('Profile updated successfully!');
+            toast.success('Profile updated');
             navigate('/profile');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update profile');
@@ -97,25 +97,23 @@ const EditProfile = () => {
             <div className="flex items-center justify-between">
                 <button
                     onClick={() => navigate('/profile')}
-                    className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-3.5 py-2 text-sm font-medium text-zinc-300 transition-all duration-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-700"
+                    className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors duration-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-700"
                 >
                     <ArrowLeft className="h-4 w-4" />
                     Back to Profile
                 </button>
                 <Link
                     to="/change-password"
-                    className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-sm font-medium text-amber-300 transition-all duration-200 hover:bg-amber-500/20"
+                    className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 transition-colors duration-200 hover:bg-amber-500/20"
                 >
                     <Key className="h-4 w-4" />
-                    Change Password
+                    Change password
                 </Link>
             </div>
 
-            <Card className="border-zinc-800 bg-zinc-900/90 p-6 sm:p-8 backdrop-blur">
+            <Card className="border-zinc-800 bg-zinc-900/90 p-6 sm:p-8 ">
                 <div className="mb-6 border-b border-zinc-800 pb-5">
-                    <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                        Edit Profile Details
-                    </h1>
+                    <h1 className="text-title font-medium text-white">Edit profile</h1>
                     <p className="text-xs sm:text-sm text-zinc-400 mt-1">
                         Manage your faculty subject, profile photo, and biography.
                     </p>
@@ -129,10 +127,10 @@ const EditProfile = () => {
                                 <img
                                     src={photoPreview}
                                     alt="Profile Preview"
-                                    className="w-28 h-28 rounded-2xl object-cover border-4 border-zinc-800 shadow-xl group-hover:border-zinc-700 transition-all"
+                                    className="w-28 h-28 rounded-xl object-cover border-4 border-zinc-800 shadow-xl group-hover:border-zinc-700 transition-colors"
                                 />
                             ) : (
-                                <div className="w-28 h-28 rounded-2xl bg-zinc-800 flex items-center justify-center border-4 border-zinc-800 shadow-xl text-zinc-400">
+                                <div className="w-28 h-28 rounded-xl bg-zinc-800 flex items-center justify-center border-4 border-zinc-800 shadow-xl text-zinc-400">
                                     <User className="h-12 w-12" />
                                 </div>
                             )}
@@ -140,7 +138,7 @@ const EditProfile = () => {
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 title="Click to upload new photo"
-                                className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-500 shadow-lg border border-blue-400/30 transition-all"
+                                className="absolute -bottom-2 -right-2 bg-primary text-black p-3 rounded-xl hover:bg-blue-500 shadow-lg border border-blue-400/30 transition-colors"
                             >
                                 <Camera className="h-4 w-4" />
                             </button>
@@ -161,7 +159,7 @@ const EditProfile = () => {
                     <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3.5 flex items-start gap-3">
                         <ShieldCheck className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                         <div className="text-xs text-blue-200/90 leading-relaxed">
-                            <span className="font-semibold text-white">Administrator Restricted Fields:</span>{' '}
+                            <span className="font-medium text-white">Administrator Restricted Fields:</span>{' '}
                             Your official faculty name and login email are managed directly by college
                             administration. Teachers can only change their password and personal subject/bio.
                         </div>
@@ -170,11 +168,11 @@ const EditProfile = () => {
                     {/* Full Name (Read-Only) */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                                <User className="h-3.5 w-3.5" />
-                                Full Name
+                            <label className="text-xs font-medium   text-zinc-400 flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                Full name
                             </label>
-                            <span className="inline-flex items-center gap-1 rounded bg-zinc-800/80 px-2 py-0.5 text-[11px] font-medium text-zinc-400 border border-zinc-700/60">
+                            <span className="inline-flex items-center gap-1 rounded bg-zinc-800/80 px-2 py-0.5 text-xs font-medium text-zinc-400 border border-zinc-700/60">
                                 <Lock className="h-3 w-3 text-amber-400" /> Read-only (Managed by Admin)
                             </span>
                         </div>
@@ -189,11 +187,11 @@ const EditProfile = () => {
                     {/* Email (Read-Only) */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                                <Mail className="h-3.5 w-3.5" />
-                                Official Email Address
+                            <label className="text-xs font-medium   text-zinc-400 flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                Official email address
                             </label>
-                            <span className="inline-flex items-center gap-1 rounded bg-zinc-800/80 px-2 py-0.5 text-[11px] font-medium text-zinc-400 border border-zinc-700/60">
+                            <span className="inline-flex items-center gap-1 rounded bg-zinc-800/80 px-2 py-0.5 text-xs font-medium text-zinc-400 border border-zinc-700/60">
                                 <Lock className="h-3 w-3 text-amber-400" /> Read-only (Managed by Admin)
                             </span>
                         </div>
@@ -207,9 +205,9 @@ const EditProfile = () => {
 
                     {/* Department / Subject (Editable) */}
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                            <BookOpen className="inline h-3.5 w-3.5 mr-1.5 text-blue-400" />
-                            Department / Teaching Subject
+                        <label className="block text-xs font-medium   text-zinc-400 mb-2">
+                            <BookOpen className="inline h-4 w-4 mr-1.5 text-blue-400" />
+                            Department / teaching subject
                         </label>
                         <input
                             type="text"
@@ -223,9 +221,9 @@ const EditProfile = () => {
 
                     {/* About Me (Editable) */}
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                            <FileText className="inline h-3.5 w-3.5 mr-1.5 text-blue-400" />
-                            About Me / Bio
+                        <label className="block text-xs font-medium   text-zinc-400 mb-2">
+                            <FileText className="inline h-4 w-4 mr-1.5 text-blue-400" />
+                            About me / bio
                         </label>
                         <textarea
                             name="description"
@@ -242,21 +240,21 @@ const EditProfile = () => {
                         <button
                             type="button"
                             onClick={() => navigate('/profile')}
-                            className="btn-secondary flex-1 justify-center py-2.5"
+                            className="btn-secondary flex-1 justify-center py-3"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary flex-1 flex items-center justify-center gap-2 py-2.5"
+                            className="btn-primary flex-1 flex items-center justify-center gap-2 py-3"
                         >
                             {loading ? (
                                 <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 <>
                                     <Save className="h-4 w-4" />
-                                    Save Profile Changes
+                                    Save profile changes
                                 </>
                             )}
                         </button>
@@ -265,13 +263,13 @@ const EditProfile = () => {
             </Card>
 
             {/* Password security callout */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-start gap-3">
-                    <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5 text-amber-400 flex-shrink-0">
+                    <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-amber-400 flex-shrink-0">
                         <Key className="h-5 w-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-semibold text-zinc-100">
+                        <h4 className="text-sm font-medium text-zinc-100">
                             Need to change your login password?
                         </h4>
                         <p className="text-xs text-zinc-400 mt-0.5">
@@ -283,7 +281,7 @@ const EditProfile = () => {
                     to="/change-password"
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700 hover:text-white flex-shrink-0"
                 >
-                    Change Password
+                    Change password
                 </Link>
             </div>
         </div>

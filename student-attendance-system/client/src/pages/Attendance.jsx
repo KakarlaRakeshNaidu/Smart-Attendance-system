@@ -107,7 +107,7 @@ const Attendance = () => {
         <div className="space-y-6 page-enter">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-title">Attendance Management</h1>
+                    <h1 className="text-title text-title">Attendance</h1>
                     <p className="text-subtext mt-1">
                         Manage and record attendance with batch-scoped face recognition
                     </p>
@@ -116,15 +116,13 @@ const Attendance = () => {
 
             {/* Teacher Batch Access Selector */}
             {user?.role === 'teacher' && (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4 sm:p-5 backdrop-blur shadow-sm">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/90 p-4 sm:p-5  shadow-sm">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
                                 <ShieldCheck className="h-5 w-5 text-blue-400" />
-                                <h3 className="text-sm font-bold text-white">
-                                    Select Target Batch to Take Attendance
-                                </h3>
-                                <span className="rounded-md bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 text-[11px] font-medium text-blue-300">
+                                <h3 className="text-sm font-medium text-white">Attendance roster</h3>
+                                <span className="rounded-md bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 text-xs font-medium text-blue-300">
                                     Required
                                 </span>
                             </div>
@@ -150,15 +148,13 @@ const Attendance = () => {
                                         <button
                                             key={batch.id}
                                             onClick={() => setSelectedBatch(batch)}
-                                            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-200 border ${
+                                            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition-colors duration-200 border ${
                                                 isSelected
                                                     ? 'border-blue-500 bg-blue-600/20 text-white shadow-md shadow-blue-500/10'
                                                     : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
                                             }`}
                                         >
-                                            {isSelected && (
-                                                <CheckCircle2 className="h-3.5 w-3.5 text-blue-400" />
-                                            )}
+                                            {isSelected && <CheckCircle2 className="h-4 w-4 text-blue-400" />}
                                             <span>
                                                 {formatAcademicYear(batch.academicYear)} • {batch.branch}-
                                                 {batch.section} ({batch.subsection})
@@ -180,14 +176,13 @@ const Attendance = () => {
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800/80 pt-3 text-xs">
                             <div className="flex items-center gap-2 text-zinc-300">
                                 <span className="text-zinc-500">Active Attendance Target:</span>
-                                <span className="font-semibold text-white">
+                                <span className="font-medium text-white">
                                     {selectedBatch.branch} {formatAcademicYear(selectedBatch.academicYear)} —
-                                    Section {selectedBatch.section} (Batch {selectedBatch.subsection})
+                                    section {selectedBatch.section} (Batch {selectedBatch.subsection})
                                 </span>
                             </div>
-                            <div className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
-                                <Sparkles className="h-3.5 w-3.5" />
-                                <span>High-Speed Biometric Scope Active</span>
+                            <div className="inline-flex items-center gap-2 text-xs text-emerald-400">
+                                <span>Authorised roster selected</span>
                             </div>
                         </div>
                     )}
@@ -209,20 +204,20 @@ const Attendance = () => {
             />
             <Card className="overflow-hidden p-4 sm:p-6">
                 <div className="mb-6">
-                    <div className="flex flex-wrap gap-1 rounded-2xl border border-zinc-800 bg-zinc-950 p-1">
+                    <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-950 p-1">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             return (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex flex-1 min-w-[80px] items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 ${
+                                    className={`flex flex-1 min-w-[80px] items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs sm:text-sm font-medium transition-colors duration-200 ${
                                         activeTab === tab.id
                                             ? 'border border-zinc-700 bg-zinc-800 text-white'
                                             : 'border border-transparent text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
                                     }`}
                                 >
-                                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                                    <Icon className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                                     <span>{tab.label}</span>
                                 </button>
                             );

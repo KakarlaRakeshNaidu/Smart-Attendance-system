@@ -1,3 +1,4 @@
+import { Dialog } from '../common/Interface';
 import React, { useState, useRef, useCallback } from 'react';
 import { User, Mail, BookOpen, Trash2, Camera, X, Check, Scan, ImagePlus } from 'lucide-react';
 import studentService from '../../services/studentService';
@@ -71,7 +72,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
 
         try {
             await studentService.registerFace(student._id, imageData);
-            toast.success('Face registered successfully!');
+            toast.success('Face registered successfully');
             stopCamera();
             if (onFaceRegistered) onFaceRegistered();
         } catch (error) {
@@ -97,7 +98,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
             const imageData = event.target.result;
             try {
                 await studentService.registerFace(student._id, imageData);
-                toast.success('Face registered successfully!');
+                toast.success('Face registered successfully');
                 if (onFaceRegistered) onFaceRegistered();
             } catch (error) {
                 toast.error(error.response?.data?.message || 'Failed to register face');
@@ -144,7 +145,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
     };
 
     return (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 transition-all duration-200 hover:bg-zinc-800">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-colors duration-200 hover:bg-zinc-800">
             <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                     <div className="relative">
@@ -166,7 +167,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                         )}
                     </div>
                     <div>
-                        <h3 className="font-semibold text-zinc-100">{student.name}</h3>
+                        <h3 className="font-medium text-zinc-100">{student.name}</h3>
                         <p className="text-sm text-zinc-500">ID: {student.studentId}</p>
                     </div>
                 </div>
@@ -199,7 +200,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                     {needsProfilePhoto && (
                         <label
                             className={`cursor-pointer rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-700 hover:text-amber-300 ${capturing ? 'pointer-events-none opacity-50' : ''}`}
-                            title="Add Profile Photo"
+                            title="Add profile Photo"
                         >
                             <ImagePlus className="h-4 w-4" />
                             <input
@@ -212,6 +213,7 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
                         </label>
                     )}
                     <button
+                        aria-label="Delete"
                         onClick={() => onDelete(student._id)}
                         className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-700 hover:text-red-400"
                     >
@@ -243,50 +245,39 @@ const StudentCard = ({ student, onDelete, onFaceRegistered }) => {
             </div>
 
             {showFaceCapture && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-                    <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-zinc-100">
-                                Register Face - {student.name}
-                            </h3>
-                            <button onClick={stopCamera} className="text-zinc-500 hover:text-zinc-300">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        <div className="mb-4 overflow-hidden rounded-2xl bg-black">
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                muted
-                                className="w-full h-64 object-cover"
-                            />
-                        </div>
-
-                        <canvas ref={canvasRef} className="hidden" />
-
-                        <div className="flex gap-3">
-                            <button onClick={stopCamera} className="btn-secondary flex-1">
-                                Cancel
-                            </button>
-                            <button
-                                onClick={captureFace}
-                                disabled={capturing}
-                                className="btn-primary flex-1 flex items-center justify-center gap-2"
-                            >
-                                {capturing ? (
-                                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <>
-                                        <Check className="h-4 w-4" />
-                                        Capture & Register
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                <Dialog title={`Register face — ${student.name}`} onClose={stopCamera}>
+                    <div className="mb-4 overflow-hidden rounded-xl bg-black">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="w-full h-64 object-cover"
+                        />
                     </div>
-                </div>
+
+                    <canvas ref={canvasRef} className="hidden" />
+
+                    <div className="flex gap-3">
+                        <button onClick={stopCamera} className="btn-secondary flex-1">
+                            Cancel
+                        </button>
+                        <button
+                            onClick={captureFace}
+                            disabled={capturing}
+                            className="btn-primary flex-1 flex items-center justify-center gap-2"
+                        >
+                            {capturing ? (
+                                <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <Check className="h-4 w-4" />
+                                    Capture & register
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </Dialog>
             )}
         </div>
     );

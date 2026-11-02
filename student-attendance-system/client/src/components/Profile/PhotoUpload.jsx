@@ -39,7 +39,7 @@ const PhotoUpload = ({ onSuccess, onCancel }) => {
         try {
             const response = await teacherService.uploadPhoto(file);
             updateTeacher({ ...teacher, profilePhoto: response.profilePhoto });
-            toast.success('Photo uploaded successfully!');
+            toast.success('Photo uploaded successfully');
             if (onSuccess) onSuccess();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to upload photo');
@@ -58,9 +58,9 @@ const PhotoUpload = ({ onSuccess, onCancel }) => {
 
     return (
         <div className="card max-w-md mx-auto">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <h2 className="text-xl font-medium mb-4 flex items-center">
                 <Camera className="h-5 w-5 mr-2 text-teal-700" />
-                Upload Profile Photo
+                Upload profile photo
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -73,6 +73,7 @@ const PhotoUpload = ({ onSuccess, onCancel }) => {
                                 className="w-40 h-40 rounded-full object-cover border-4 border-gray-200"
                             />
                             <button
+                                aria-label="Close"
                                 type="button"
                                 onClick={clearSelection}
                                 className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
@@ -117,7 +118,7 @@ const PhotoUpload = ({ onSuccess, onCancel }) => {
                         ) : (
                             <>
                                 <Check className="h-5 w-5" />
-                                Upload Photo
+                                Upload photo
                             </>
                         )}
                     </button>

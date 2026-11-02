@@ -86,7 +86,7 @@ const TakeAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                 return;
             }
             await api.post('/academic/sessions/' + sessionId + '/attendance', { records });
-            toast.success('Attendance marked successfully!');
+            toast.success('Attendance marked successfully');
             if (onAttendanceMarked) onAttendanceMarked();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to mark attendance');
@@ -131,9 +131,9 @@ const TakeAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
                     <p className="text-sm text-zinc-400">
-                        <span className="font-semibold text-emerald-300">{presentCount} Present</span>
+                        <span className="font-medium text-emerald-300">{presentCount} Present</span>
                         {' | '}
-                        <span className="font-semibold text-red-300">{absentCount} Absent</span>
+                        <span className="font-medium text-red-300">{absentCount} Absent</span>
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -141,17 +141,17 @@ const TakeAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                         type="button"
                         disabled={submitting || !!disabledReason}
                         onClick={markAllPresent}
-                        className="rounded-xl bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-300 transition-all duration-200 hover:bg-emerald-500/30"
+                        className="rounded-xl bg-emerald-500/20 px-3 py-2 text-sm font-medium text-emerald-300 transition-colors duration-200 hover:bg-emerald-500/30"
                     >
-                        Mark All Present
+                        Mark all present
                     </button>
                     <button
                         type="button"
                         disabled={submitting || !!disabledReason}
                         onClick={markAllAbsent}
-                        className="rounded-xl bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-300 transition-all duration-200 hover:bg-red-500/30"
+                        className="rounded-xl bg-red-500/20 px-3 py-2 text-sm font-medium text-red-300 transition-colors duration-200 hover:bg-red-500/30"
                     >
-                        Mark All Absent
+                        Mark all absent
                     </button>
                 </div>
             </div>
@@ -164,20 +164,20 @@ const TakeAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                             onClick={() => {
                                 if (!submitting && !disabledReason) toggleAttendance(student._id);
                             }}
-                            className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all duration-200 ${attendance[student._id] === 'present' ? 'border-emerald-900 bg-emerald-500/10 hover:bg-emerald-500/20' : attendance[student._id] === 'absent' ? 'border-red-900 bg-red-500/10 hover:bg-red-500/20' : 'border-zinc-700 bg-zinc-900 hover:bg-zinc-800'}`}
+                            className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors duration-200 ${attendance[student._id] === 'present' ? 'border-emerald-900 bg-emerald-500/10 hover:bg-emerald-500/20' : attendance[student._id] === 'absent' ? 'border-red-900 bg-red-500/10 hover:bg-red-500/20' : 'border-zinc-700 bg-zinc-900 hover:bg-zinc-800'}`}
                         >
                             <div className="flex items-center space-x-3">
                                 <div
                                     className={`flex h-10 w-10 items-center justify-center rounded-xl ${attendance[student._id] === 'present' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}
                                 >
                                     <span
-                                        className={`font-semibold ${attendance[student._id] === 'present' ? 'text-emerald-300' : 'text-red-300'}`}
+                                        className={`font-medium ${attendance[student._id] === 'present' ? 'text-emerald-300' : 'text-red-300'}`}
                                     >
                                         {student.name?.charAt(0) || 'S'}
                                     </span>
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-zinc-100">{student.name}</p>
+                                    <p className="font-medium text-zinc-100">{student.name}</p>
                                     <p className="text-sm text-zinc-500">ID: {student.studentId}</p>
                                 </div>
                             </div>
@@ -223,7 +223,7 @@ const TakeAttendance = ({ onAttendanceMarked, sessionId, disabledReason, onBusyC
                     ) : (
                         <>
                             <Save className="h-5 w-5" />
-                            Save Attendance
+                            Save attendance
                         </>
                     )}
                 </button>

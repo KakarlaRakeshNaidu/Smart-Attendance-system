@@ -146,27 +146,27 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
         <div className="space-y-6 py-4">
             {/* Active Scoped Batch Indicator */}
             {selectedBatch ? (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-xs">
                     <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
-                        <span className="font-semibold text-blue-200">
-                            Biometric Scope: {selectedBatch.branch} Year {selectedBatch.academicYear} — Sec{' '}
+                        <span className="h-2 w-2 rounded-full bg-blue-400 "></span>
+                        <span className="font-medium text-blue-200">
+                            Roster: {selectedBatch.branch} Year {selectedBatch.academicYear} — sec{' '}
                             {selectedBatch.section} ({selectedBatch.subsection})
                         </span>
                     </div>
-                    <span className="text-[11px] text-zinc-400">
+                    <span className="text-xs text-zinc-400">
                         Photos matched strictly against students in this batch
                     </span>
                 </div>
             ) : (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-300">
-                    ⚠️ Please select an authorized batch above before uploading photos.
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+                    Please select an authorized batch above before uploading photos.
                 </div>
             )}
 
             {/* File Upload Section */}
             <div
-                className="relative cursor-pointer rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/30 p-8 text-center transition-all hover:border-blue-500 hover:bg-zinc-900/50"
+                className="relative cursor-pointer rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-900/30 p-8 text-center transition-colors hover:border-blue-500 hover:bg-zinc-900/50"
                 onClick={() => fileInputRef.current?.click()}
             >
                 <input
@@ -178,15 +178,15 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
                     className="hidden"
                 />
                 <Upload className="mx-auto mb-3 h-12 w-12 text-green-400" />
-                <h3 className="mb-2 text-lg font-semibold text-zinc-100">Click to upload classroom photos</h3>
+                <h3 className="mb-2 text-lg font-medium text-zinc-100">Click to upload classroom photos</h3>
                 <p className="text-sm text-zinc-400">Supports JPG, PNG, WEBP • Max 10MB per image</p>
             </div>
 
             {/* Selected Files Preview */}
             {selectedFiles.length > 0 && (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
                     <div className="mb-4 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-zinc-100">
+                        <h3 className="text-lg font-medium text-zinc-100">
                             {selectedFiles.length} Photo(s) Selected
                         </h3>
                         <button
@@ -194,7 +194,7 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
                             disabled={loading}
                             className="text-sm text-green-400 hover:text-green-300 disabled:opacity-50"
                         >
-                            Clear All
+                            Clear all
                         </button>
                     </div>
 
@@ -212,6 +212,7 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                                     <button
+                                        aria-label="Close"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             const newFiles = selectedFiles.filter((_, i) => i !== index);
@@ -238,17 +239,17 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
                     <button
                         onClick={processAllPhotos}
                         disabled={loading || selectedFiles.length === 0}
-                        className="w-full rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 font-semibold text-zinc-950 transition-all hover:from-green-400 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full rounded-lg  from-green-500 to-green-600 px-6 py-3 font-medium text-zinc-950 transition-colors hover:from-green-400 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {loading ? (
                             <>
                                 <Loader className="h-5 w-5 animate-spin" />
-                                Processing Photo {processingIndex + 1} of {selectedFiles.length}
+                                Processing photo {processingIndex + 1} of {selectedFiles.length}
                             </>
                         ) : (
                             <>
                                 <Upload className="h-5 w-5" />
-                                Process All Photos
+                                Process all photos
                             </>
                         )}
                     </button>
@@ -259,12 +260,12 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
             {showResults && markedStudents.length > 0 && (
                 <div
                     id="results-section"
-                    className="rounded-2xl border border-green-900/30 bg-green-950/20 p-6"
+                    className="rounded-xl border border-green-900/30 bg-green-950/20 p-6"
                 >
                     <div className="mb-6">
                         <div className="mb-4 flex items-center gap-2">
                             <CheckCircle className="h-6 w-6 text-green-400" />
-                            <h3 className="text-xl font-semibold text-green-400">
+                            <h3 className="text-xl font-medium text-green-400">
                                 Students Marked ({markedStudents.length})
                             </h3>
                         </div>
@@ -283,7 +284,7 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-semibold text-green-400">
+                                        <p className="text-sm font-medium text-green-400">
                                             {Math.round(student.confidence * 100)}%
                                         </p>
                                         <p className="text-xs text-green-300">Confidence</p>
@@ -298,7 +299,7 @@ const PhotoUpload = ({ onAttendanceMarked, selectedBatch }) => {
             {showResults && markedStudents.length === 0 && (
                 <div
                     id="results-section"
-                    className="rounded-2xl border border-green-900/30 bg-green-950/20 p-6 text-center"
+                    className="rounded-xl border border-green-900/30 bg-green-950/20 p-6 text-center"
                 >
                     <AlertCircle className="mx-auto mb-3 h-8 w-8 text-green-400" />
                     <p className="text-green-300">No students recognized in the photos</p>

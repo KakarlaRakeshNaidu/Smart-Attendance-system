@@ -75,14 +75,14 @@ const App = () => {
         <NotificationProvider>
             <div className="min-h-screen bg-zinc-950 text-zinc-100">
                 {shell && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
-                <div className={shell ? 'lg:pl-72' : ''}>
+                <div className={shell ? 'workspace-shell' : ''}>
                     {shell && <Navbar onMenuToggle={() => setSidebarOpen((v) => !v)} />}
                     {!shell && (
                         <div className="fixed right-4 bottom-4 z-50">
                             <ThemeControl />
                         </div>
                     )}
-                    <main className={publicPage ? 'min-h-screen' : 'px-4 py-4 sm:px-6 sm:py-6'}>
+                    <main className={publicPage ? 'min-h-screen' : 'app-main'}>
                         <ErrorBoundary key={location.pathname}>
                             <Suspense fallback={<PageSkeleton />}>
                                 <Routes>

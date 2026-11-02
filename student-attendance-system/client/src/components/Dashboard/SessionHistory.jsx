@@ -28,9 +28,9 @@ export default function SessionHistory() {
         absent: s.records.filter((r) => r.status === 'absent').length
     }));
     return (
-        <section className="grid gap-5 xl:grid-cols-2">
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
             <div className="card p-5">
-                <h2 className="font-semibold mb-4">Attendance Trend</h2>
+                <h2 className="font-medium mb-4">Attendance trend</h2>
                 <p className="text-sm text-zinc-400 mb-3">
                     Last seven lectures; late marks count as attended.
                 </p>
@@ -40,8 +40,13 @@ export default function SessionHistory() {
                     </p>
                 )}
                 {trend.length ? (
-                    <div className="h-56">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-72">
+                        <ResponsiveContainer
+                            initialDimension={{ width: 640, height: 280 }}
+                            minWidth={0}
+                            width="100%"
+                            height="100%"
+                        >
                             <AreaChart data={trend}>
                                 <XAxis dataKey="label" stroke="var(--chart-axis)" />
                                 <YAxis allowDecimals={false} stroke="var(--chart-axis)" />
@@ -55,16 +60,16 @@ export default function SessionHistory() {
                                 <Area
                                     dataKey="present"
                                     name="Present or late"
-                                    stroke="#10b981"
-                                    fill="#10b981"
-                                    fillOpacity={0.15}
+                                    stroke="var(--chart)"
+                                    fill="var(--chart)"
+                                    fillOpacity={0.08}
                                 />
                                 <Area
                                     dataKey="absent"
                                     name="Absent"
-                                    stroke="#f43f5e"
-                                    fill="#f43f5e"
-                                    fillOpacity={0.1}
+                                    stroke="var(--chart-axis)"
+                                    fill="var(--chart-axis)"
+                                    fillOpacity={0.03}
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
@@ -74,7 +79,7 @@ export default function SessionHistory() {
                 )}
             </div>
             <div className="card p-5">
-                <h2 className="font-semibold mb-4">Recent Attendance</h2>
+                <h2 className="font-medium mb-4">Recent attendance</h2>
                 <div className="space-y-3">
                     {sessions.map((s) => (
                         <Link

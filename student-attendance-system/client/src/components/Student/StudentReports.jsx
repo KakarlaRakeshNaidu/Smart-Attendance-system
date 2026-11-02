@@ -1,546 +1,375 @@
 import React, { useEffect, useState } from 'react';
+import { Download, ArrowRight, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import api from '../../services/api';
-import { useAuth } from '../../context/authContextState';
-import {
-    Download,
-    CheckCircle2,
-    AlertTriangle,
-    TrendingUp,
-    Calendar,
-    BookOpen,
-    ShieldCheck,
-    Clock,
-    FileText,
-    Loader2,
-    CalendarCheck,
-    Award
-} from 'lucide-react';
-
-const StudentReports = () => {
-    const { user } = useAuth();
-    const [attendanceData, setAttendanceData] = useState([]);
-    const [profile, setProfile] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-
+import { PageHeader } from '../common/Interface';
+import PageSkeleton from '../common/PageSkeleton';
+const campusDate = (value) => new Date(value).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+const attended = (status) => ['present', 'late'].includes(status);
+export default function StudentReports() {
+    const [data, setData] = useState([]),
+        [profile, setProfile] = useState(null),
+        [loading, setLoading] = useState(true),
+        [error, setError] = useState('');
     useEffect(() => {
+        let active = true;
         Promise.all([api.get('/student/attendance'), api.get('/student/profile')])
-            .then(([attRes, profRes]) => {
-                if (attRes.data.success) setAttendanceData(attRes.data.attendance || []);
-                if (profRes.data.success) setProfile(profRes.data.student || null);
+            .then(([attendance, student]) => {
+                if (active) {
+                    setData(attendance.data.attendance || []);
+                    setProfile(student.data.student || null);
+                }
             })
-            .catch(() => setError('Failed to load attendance report'))
-            .finally(() => setLoading(false));
-    }, []);
-
-    // ── Metrics Calculations ──────────────────────────────────────────────────
-    let totalConducted = 0;
-    let totalAttended = 0;
-    let totalFace = 0;
-    let totalManual = 0;
-    const allSessions = [];
-
-    attendanceData.forEach((item) => {
-        totalConducted += item.totalSessions || 0;
-        totalAttended += item.attended || 0;
-        (item.records || []).forEach((r) => {
-            allSessions.push({
-                ...r,
-                subjectName: item.enrollment?.subject?.name || 'Subject',
-                subjectCode: item.enrollment?.subject?.code || '–',
-                className: item.enrollment?.class?.name || '–'
+            .catch((e) => {
+                if (active) setError(e.response?.data?.message || 'Could not load your attendance report.');
+            })
+            .finally(() => {
+                if (active) setLoading(false);
             });
-            if (r.source === 'face') totalFace++;
-            else totalManual++;
-        });
-    });
-
-    const totalMissed = totalConducted - totalAttended;
-    const incompleteData = attendanceData.some(item => item.dataQuality);
-    const overallPercentage = totalConducted > 0 && !incompleteData ? Math.round((totalAttended / totalConducted) * 100) : null;
-    const thresholds = [
-        ...new Set(
-            attendanceData
-                .map((item) => item.threshold)
-                .filter((value) => typeof value === 'number' && value > 0)
-        )
-    ];
-    const minThreshold = thresholds.length === 1 ? thresholds[0] : null;
-    const thresholdFraction = minThreshold === null ? null : minThreshold / 100;
-    const evaluatedSubjects = attendanceData.filter(item => item.totalSessions > 0);
-    const isEligible = evaluatedSubjects.length > 0 && evaluatedSubjects.every(item => !item.dataQuality && !item.belowThreshold);
-
-    // Calculate classes needed to reach 75% or safe classes that can be missed
-    let eligibilityInsight = '';
-    let insightType = 'neutral';
-
-    if (totalConducted > 0 && minThreshold !== null) {
-        if (overallPercentage < minThreshold) {
-            // Need: (attended + X) / (conducted + X) >= 0.75  =>  0.25*X >= 0.75*conducted - attended
-            const needed =
-                minThreshold === 100
-                    ? null
-                    : Math.ceil(
-                          (thresholdFraction * totalConducted - totalAttended) / (1 - thresholdFraction)
-                      );
-            eligibilityInsight =
-                needed === null
-                    ? 'With previous absences, the 100% target cannot be reached by adding attended classes.'
-                    : `You need to attend the next ${needed} consecutive class${needed > 1 ? 'es' : ''} to reach the ${minThreshold}% attendance minimum.`;
-            insightType = 'danger';
+        return () => {
+            active = false;
+        };
+    }, []);
+    if (loading) return <PageSkeleton />;
+    const totalConducted = data.reduce((sum, item) => sum + (item.totalSessions || 0), 0),
+        totalAttended = data.reduce((sum, item) => sum + (item.attended || 0), 0),
+        incomplete = data.some((item) => item.dataQuality);
+    const percentage =
+        totalConducted && !incomplete ? Math.round((totalAttended * 100) / totalConducted) : null;
+    const sessions = data.flatMap((item) =>
+        (item.records || []).map((record) => ({
+            ...record,
+            subjectName: item.enrollment?.subject?.name || 'Subject',
+            subjectCode: item.enrollment?.subject?.code || '',
+            className: item.enrollment?.class?.name || ''
+        }))
+    );
+    const missed = sessions.filter((record) => record.status === 'absent'),
+        faceCount = sessions.filter((record) => record.source === 'face').length;
+    const evaluated = data.filter((item) => item.totalSessions > 0),
+        low = evaluated.filter((item) => item.belowThreshold),
+        targets = [
+            ...new Set(
+                evaluated
+                    .map((item) => item.threshold)
+                    .filter((value) => typeof value === 'number' && value > 0)
+            )
+        ];
+    let guidance = !totalConducted
+        ? 'No completed, finalised lectures are available yet.'
+        : targets.length !== 1
+          ? 'Minimums vary by academic term. Review the subject records below.'
+          : '';
+    if (totalConducted && targets.length === 1 && !incomplete) {
+        const target = targets[0] / 100;
+        if (totalAttended < target * totalConducted) {
+            const needed = Math.ceil((target * totalConducted - totalAttended) / (1 - target));
+            guidance =
+                target === 1
+                    ? 'The 100% minimum cannot be reached by adding attended classes after an absence.'
+                    : `Attend the next ${needed} lecture${needed === 1 ? '' : 's in a row'} to reach ${targets[0]}% overall attendance. Each subject is assessed separately.`;
         } else {
-            // Safe to miss: (attended) / (conducted + Y) >= 0.75  =>  0.75*Y <= attended - 0.75*conducted
-            const safeToMiss = Math.floor(
-                (totalAttended - thresholdFraction * totalConducted) / thresholdFraction
-            );
-            if (safeToMiss > 0) {
-                eligibilityInsight = `You can afford to miss up to ${safeToMiss} class${safeToMiss > 1 ? 'es' : ''} and still maintain ${minThreshold}% attendance.`;
-                insightType = 'safe';
-            } else {
-                eligibilityInsight = `You are currently right at the ${minThreshold}% attendance minimum. Attend upcoming classes to avoid shortages.`;
-                insightType = 'warning';
-            }
+            const available = Math.floor(totalAttended / target - totalConducted);
+            guidance =
+                available > 0
+                    ? `${available} additional missed lecture${available === 1 ? '' : 's'} would keep your overall attendance at or above ${targets[0]}%. Each subject is assessed separately.`
+                    : `Your overall attendance meets the ${targets[0]}% minimum. Each subject is assessed separately.`;
         }
     }
-
-    if (minThreshold === null)
-        eligibilityInsight =
-            'Different academic sessions have different minimums. Review each subject below.';
-    if (!totalConducted) eligibilityInsight = 'No completed, finalised sessions are available yet.';
-
-    // Monthly breakdown aggregation
-    const monthlyMap = new Map();
-    allSessions.forEach((s) => {
-        const d = new Date(s.date);
-        const monthKey = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-        if (!monthlyMap.has(monthKey)) {
-            monthlyMap.set(monthKey, { month: monthKey, conducted: 0, attended: 0 });
-        }
-        const m = monthlyMap.get(monthKey);
-        m.conducted++;
-        if (['present', 'late'].includes(s.status)) m.attended++;
-    });
-    const monthlyBreakdown = Array.from(monthlyMap.values());
-
-    // Missed sessions log
-    const missedSessions = allSessions.filter((s) => s.status === 'absent');
-
-    // CSV Exporter
-    const handleDownloadCSV = () => {
-        if (allSessions.length === 0) return;
+    if (incomplete)
+        guidance =
+            'Some finalised records are incomplete. Percentages are unavailable until staff review the data.';
+    const months = new Map();
+    for (const record of sessions) {
+        const day = campusDate(record.date),
+            key = day.slice(0, 7);
+        if (!months.has(key)) months.set(key, { key, conducted: 0, attended: 0 });
+        const month = months.get(key);
+        month.conducted++;
+        if (attended(record.status)) month.attended++;
+    }
+    const monthly = [...months.values()]
+        .sort((a, b) => a.key.localeCompare(b.key))
+        .map((month) => ({
+            ...month,
+            label: new Date(month.key + '-15T12:00:00+05:30').toLocaleDateString('en-IN', {
+                month: 'short',
+                year: '2-digit',
+                timeZone: 'Asia/Kolkata'
+            }),
+            percentage: Math.round((month.attended * 100) / month.conducted)
+        }));
+    function download() {
         const headers = [
             'Date',
             'Subject',
-            'Subject Code',
+            'Subject code',
             'Class',
             'Session',
             'Status',
             'Method',
             'Teacher'
         ];
-        const rows = allSessions.map((s) => [
-            new Date(s.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
-            s.subjectName,
-            s.subjectCode,
-            s.className,
-            s.sessionLabel,
-            s.status,
-            s.source,
-            s.teacherName
+        const rows = sessions.map((record) => [
+            campusDate(record.date),
+            record.subjectName,
+            record.subjectCode,
+            record.className,
+            record.sessionLabel,
+            record.status,
+            record.source,
+            record.teacherName
         ]);
         const cell = (value) => {
             const text = String(value ?? '');
             return '"' + (/^[=+@\-\t\r]/.test(text) ? "'" + text : text).replace(/"/g, '""') + '"';
         };
-        const csvContent = '\uFEFF' + [headers, ...rows].map((row) => row.map(cell).join(',')).join('\r\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute(
-            'download',
-            `Attendance_Report_${profile?.studentId || 'Student'}_${new Date().toISOString().split('T')[0]}.csv`
+        const blob = new Blob(
+            ['\uFEFF' + [headers, ...rows].map((row) => row.map(cell).join(',')).join('\r\n')],
+            { type: 'text/csv;charset=utf-8;' }
         );
+        const url = URL.createObjectURL(blob),
+            link = document.createElement('a');
+        link.href = url;
+        link.download = `Attendance_Report_${profile?.studentId || 'Student'}_${campusDate(new Date())}.csv`;
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-    };
-
-    if (loading) {
-        return (
-            <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
-            </div>
-        );
+        link.remove();
+        URL.revokeObjectURL(url);
     }
-
     return (
-        <div className="space-y-6">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
-                <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">
-                        Attendance Analytics & Reports
-                    </h1>
-                    <p className="mt-1 text-sm text-zinc-400">
-                        Academic attendance audit, attendance target, and official transcript export
-                    </p>
-                </div>
-                <div className="flex items-center gap-2.5">
-                    <button
-                        onClick={handleDownloadCSV}
-                        disabled={allSessions.length === 0}
-                        className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-black hover:bg-zinc-200 transition-colors disabled:opacity-50 shadow-sm"
-                    >
-                        <Download className="h-4 w-4" />
-                        <span>Export CSV Report</span>
+        <div className="page-stack">
+            <PageHeader
+                title="Attendance report"
+                description={
+                    profile
+                        ? `${profile.name} · ${profile.studentId}`
+                        : 'Your subject records and monthly attendance'
+                }
+                actions={
+                    <button className="btn-primary" onClick={download} disabled={!sessions.length || !!error}>
+                        <Download size={16} />
+                        Download CSV
                     </button>
-                </div>
-            </div>
-
+                }
+            />
             {error && (
-                <div className="rounded-xl border border-red-900/50 bg-red-950/30 p-4 text-sm text-red-400">
+                <p className="status-note text-red-400" role="alert">
                     {error}
-                </div>
+                </p>
             )}
-
-            {/* Attendance Target Banner */}
-            {totalConducted > 0 && (
-                <div
-                    className={`rounded-2xl border p-5 ${
-                        isEligible
-                            ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300'
-                            : 'border-red-500/30 bg-red-950/20 text-red-300'
-                    }`}
-                >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-start gap-3.5">
-                            <div
-                                className={`mt-0.5 rounded-xl p-2.5 ${
-                                    isEligible
-                                        ? 'bg-emerald-500/20 text-emerald-400'
-                                        : 'bg-red-500/20 text-red-400'
-                                }`}
-                            >
-                                {isEligible ? (
-                                    <CheckCircle2 className="h-6 w-6" />
-                                ) : (
-                                    <AlertTriangle className="h-6 w-6" />
-                                )}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <h3 className="text-base font-bold text-white">
-                                        {isEligible
-                                            ? 'Attendance Target Met'
-                                            : 'Shortage of Attendance Alert'}
-                                    </h3>
-                                    <span
-                                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                            isEligible
-                                                ? 'bg-emerald-500/20 text-emerald-300'
-                                                : 'bg-red-500/20 text-red-300'
-                                        }`}
-                                    >
-                                        Current: {overallPercentage}% (Target:{' '}
-                                        {minThreshold === null ? 'per session' : minThreshold + '%'})
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-sm text-zinc-300 leading-relaxed">
-                                    {eligibilityInsight}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 self-end md:self-center border-t md:border-t-0 md:border-l border-zinc-700/50 pt-3 md:pt-0 md:pl-5">
-                            <div className="text-right">
-                                <span className="text-xs text-zinc-400">Status</span>
-                                <p
-                                    className={`text-sm font-bold ${isEligible ? 'text-emerald-400' : 'text-red-400'}`}
-                                >
-                                    {isEligible ? 'Attendance target met' : 'Action Required'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Top KPI Cards */}
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-zinc-400">Overall Attendance</p>
-                        <TrendingUp className="h-4 w-4 text-zinc-500" />
-                    </div>
-                    <p
-                        className={`mt-2 text-2xl font-bold ${
-                            overallPercentage === null
-                                ? 'text-zinc-400'
-                                : isEligible
-                                  ? 'text-emerald-400'
-                                  : 'text-red-400'
-                        }`}
-                    >
-                        {overallPercentage !== null ? `${overallPercentage}%` : '–'}
+            <div className="attention-note">
+                <AlertCircle size={18} />
+                <div>
+                    <p>
+                        {incomplete
+                            ? 'Attendance data needs review'
+                            : !totalConducted
+                              ? 'No completed sessions'
+                              : low.length
+                                ? `${low.length} ${low.length === 1 ? 'subject below its' : 'subjects below their'} attendance minimum`
+                                : 'Attendance minimums met'}
                     </p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                        {totalAttended} of {totalConducted} classes attended
-                    </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-zinc-400">Total Classes Held</p>
-                        <CalendarCheck className="h-4 w-4 text-zinc-500" />
-                    </div>
-                    <p className="mt-2 text-2xl font-bold text-white">{totalConducted}</p>
-                    <p className="mt-1 text-xs text-zinc-500">Across all enrolled subjects</p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-zinc-400">Classes Attended</p>
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                    </div>
-                    <p className="mt-2 text-2xl font-bold text-emerald-400">{totalAttended}</p>
-                    <p className="mt-1 text-xs text-zinc-500">{totalMissed} class(es) missed</p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-zinc-400">Biometric Verification</p>
-                        <ShieldCheck className="h-4 w-4 text-blue-400" />
-                    </div>
-                    <p className="mt-2 text-2xl font-bold text-blue-400">
-                        {allSessions.length > 0 ? Math.round((totalFace / allSessions.length) * 100) : 0}%
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                        {totalFace} Face / {totalManual} Manual
-                    </p>
+                    <p className="text-sm text-zinc-400 mt-2">{guidance}</p>
                 </div>
             </div>
-
-            {/* Subject Audit & Eligibility Table */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden shadow-sm">
-                <div className="border-b border-zinc-800 px-5 py-4 flex items-center justify-between">
+            <div className="metric-grid">
+                {[
+                    [
+                        'Overall attendance',
+                        percentage === null ? '—' : percentage + '%',
+                        'Present and late / completed sessions'
+                    ],
+                    [
+                        'Lectures attended',
+                        `${totalAttended} / ${totalConducted}`,
+                        'Across your completed subject records'
+                    ],
+                    ['Face recognition marks', faceCount, 'Marks recorded with face recognition'],
+                    ['Manual marks', sessions.length - faceCount, 'Other saved attendance marks']
+                ].map(([label, value, detail]) => (
+                    <div className="card" key={label}>
+                        <p className="text-sm text-zinc-400">{label}</p>
+                        <p className="stat-value mt-3">{value}</p>
+                        <p className="field-hint mt-3">{detail}</p>
+                    </div>
+                ))}
+            </div>
+            <section className="card !p-0">
+                <header className="section-heading-row">
                     <div>
-                        <h2 className="text-base font-semibold text-white">Subject-wise Eligibility Audit</h2>
-                        <p className="text-xs text-zinc-400">
-                            Evaluation against the configured academic session minimum
+                        <h2>Attendance by subject</h2>
+                        <p className="field-hint mt-2">
+                            Each subject uses its academic term’s configured minimum
                         </p>
                     </div>
-                    <span className="text-xs font-mono text-zinc-500">
-                        {attendanceData.length} Subject(s)
-                    </span>
-                </div>
-
+                    <Link className="text-sm text-primary whitespace-nowrap" to="/semester-reports">
+                        Semester reports
+                        <ArrowRight size={16} className="inline ml-2" />
+                    </Link>
+                </header>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-zinc-950/80 border-b border-zinc-800 text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                    <table className="w-full min-w-[640px]">
+                        <thead>
                             <tr>
-                                <th className="px-5 py-3 text-left">Subject</th>
-                                <th className="px-4 py-3 text-center">Conducted</th>
-                                <th className="px-4 py-3 text-center">Attended</th>
-                                <th className="px-4 py-3 text-center">Missed</th>
-                                <th className="px-4 py-3 text-center">Percentage</th>
-                                <th className="px-4 py-3 text-center">Margin / Needed</th>
-                                <th className="px-5 py-3 text-right">Eligibility</th>
+                                {['Subject', 'Attended / held', 'Absent', 'Minimum', 'Attendance'].map(
+                                    (label) => (
+                                        <th key={label} className="text-left">
+                                            {label}
+                                        </th>
+                                    )
+                                )}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-800/80">
-                            {attendanceData.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="py-10 text-center text-zinc-500 text-sm">
-                                        No subject attendance data available yet.
+                        <tbody>
+                            {data.map((item) => (
+                                <tr key={item.enrollment?.id} className="border-t border-zinc-800">
+                                    <td>
+                                        <p className="font-mono text-xs text-zinc-400">
+                                            {item.enrollment?.subject?.code}
+                                        </p>
+                                        <p className="mt-1">{item.enrollment?.subject?.name}</p>
+                                        <p className="field-hint mt-1">{item.enrollment?.class?.name}</p>
+                                    </td>
+                                    <td className="tabular-nums">
+                                        {item.attended} / {item.totalSessions}
+                                    </td>
+                                    <td className="tabular-nums">{item.missed}</td>
+                                    <td>{item.threshold == null ? '—' : item.threshold + '%'}</td>
+                                    <td>
+                                        <span className="font-medium tabular-nums">
+                                            {item.percentage == null ? '—' : item.percentage + '%'}
+                                        </span>
+                                        <p
+                                            className={
+                                                'field-hint mt-1 ' +
+                                                (item.belowThreshold ? 'text-amber-400' : '')
+                                            }
+                                        >
+                                            {item.dataQuality
+                                                ? 'Incomplete data'
+                                                : !item.totalSessions
+                                                  ? 'No completed sessions'
+                                                  : item.belowThreshold
+                                                    ? 'Below minimum'
+                                                    : 'Minimum met'}
+                                        </p>
                                     </td>
                                 </tr>
-                            ) : (
-                                attendanceData.map((item) => {
-                                    const subj = item.enrollment?.subject;
-                                    const total = item.totalSessions || 0;
-                                    const attended = item.attended || 0;
-                                    const missed = item.missed || 0;
-                                    const pct = item.percentage;
-                                    const thresh = item.threshold || 75;
-                                    const pass = pct !== null && pct >= thresh;
-
-                                    let marginText = '–';
-                                    let marginColor = 'text-zinc-400';
-                                    if (total > 0) {
-                                        if (pct < thresh) {
-                                            const need = Math.ceil(
-                                                ((thresh / 100) * total - attended) / (1 - thresh / 100)
-                                            );
-                                            marginText = `+${need} needed`;
-                                            marginColor = 'text-red-400';
-                                        } else {
-                                            const safe = Math.floor(
-                                                (attended - (thresh / 100) * total) / (thresh / 100)
-                                            );
-                                            marginText = safe > 0 ? `${safe} safe` : 'On edge';
-                                            marginColor = safe > 0 ? 'text-emerald-400' : 'text-amber-400';
-                                        }
-                                    }
-
-                                    return (
-                                        <tr
-                                            key={item.enrollment?.id}
-                                            className="hover:bg-zinc-800/40 transition-colors"
-                                        >
-                                            <td className="px-5 py-3.5">
-                                                <div className="font-semibold text-white">
-                                                    {subj?.name || 'Subject'}
-                                                </div>
-                                                <div className="text-xs text-zinc-500 font-mono">
-                                                    {subj?.code || '–'} ·{' '}
-                                                    {item.enrollment?.class?.name || 'Class'}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3.5 text-center text-zinc-200 font-medium">
-                                                {total}
-                                            </td>
-                                            <td className="px-4 py-3.5 text-center text-emerald-400 font-semibold">
-                                                {attended}
-                                            </td>
-                                            <td className="px-4 py-3.5 text-center text-red-400 font-medium">
-                                                {missed}
-                                            </td>
-                                            <td className="px-4 py-3.5 text-center">
-                                                <span
-                                                    className={`inline-block font-bold text-sm ${
-                                                        pct === null
-                                                            ? 'text-zinc-500'
-                                                            : pass
-                                                              ? 'text-emerald-400'
-                                                              : 'text-red-400'
-                                                    }`}
-                                                >
-                                                    {pct !== null ? `${pct}%` : '–'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3.5 text-center font-medium text-xs">
-                                                <span className={marginColor}>{marginText}</span>
-                                            </td>
-                                            <td className="px-5 py-3.5 text-right">
-                                                <span
-                                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                                        pass
-                                                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                                            : 'bg-red-500/10 text-red-400 border border-red-500/30'
-                                                    }`}
-                                                >
-                                                    {pass ? 'Target met' : 'Below minimum'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
+                            ))}
                         </tbody>
                     </table>
-                </div>
-            </div>
-
-            {/* Monthly Trend & Missed Classes Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Monthly Trend Breakdown */}
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 shadow-sm">
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-zinc-400" />
-                            <h3 className="font-semibold text-white text-sm">Monthly Attendance Trend</h3>
-                        </div>
-                        <span className="text-xs text-zinc-500">Historical performance</span>
-                    </div>
-
-                    {monthlyBreakdown.length === 0 ? (
-                        <p className="py-8 text-center text-sm text-zinc-500">No session history recorded.</p>
-                    ) : (
-                        <div className="space-y-3.5">
-                            {monthlyBreakdown.map((m) => {
-                                const pct =
-                                    m.conducted > 0 ? Math.round((m.attended / m.conducted) * 100) : 0;
-                                return (
-                                    <div key={m.month} className="space-y-1.5">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="font-medium text-zinc-300">{m.month}</span>
-                                            <span className="text-zinc-400 font-mono">
-                                                <strong
-                                                    className={
-                                                        minThreshold !== null && pct >= minThreshold
-                                                            ? 'text-emerald-400'
-                                                            : 'text-red-400'
-                                                    }
-                                                >
-                                                    {pct}%
-                                                </strong>{' '}
-                                                ({m.attended}/{m.conducted})
-                                            </span>
-                                        </div>
-                                        <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
-                                            <div
-                                                className={`h-full rounded-full transition-all duration-500 ${
-                                                    minThreshold !== null && pct >= minThreshold
-                                                        ? 'bg-emerald-500'
-                                                        : pct >= 60
-                                                          ? 'bg-amber-500'
-                                                          : 'bg-red-500'
-                                                }`}
-                                                style={{ width: `${pct}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                    {!data.length && (
+                        <p className="p-6 text-sm text-zinc-400">No subject records are available yet</p>
                     )}
                 </div>
-
-                {/* Missed / Absent Sessions Log */}
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 shadow-sm">
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
-                        <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-amber-400" />
-                            <h3 className="font-semibold text-white text-sm">Absence Log</h3>
+            </section>
+            <section className="card">
+                <h2>Monthly attendance trend</h2>
+                <p className="field-hint mt-2 mb-6">
+                    Completed, finalised lecture records · late counts as attended
+                </p>
+                {monthly.length ? (
+                    <>
+                        <div className="h-72">
+                            <ResponsiveContainer
+                                initialDimension={{ width: 640, height: 280 }}
+                                minWidth={0}
+                                width="100%"
+                                height="100%"
+                            >
+                                <AreaChart
+                                    data={monthly}
+                                    margin={{ top: 8, right: 16, bottom: 0, left: -12 }}
+                                >
+                                    <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                                    <XAxis dataKey="label" axisLine={false} tickLine={false} />
+                                    <YAxis
+                                        domain={[0, 100]}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tickFormatter={(value) => value + '%'}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            background: 'var(--chart-tooltip-bg)',
+                                            border: '1px solid var(--chart-tooltip-border)',
+                                            borderRadius: 8,
+                                            color: 'var(--chart-tooltip-text)'
+                                        }}
+                                        formatter={(value) => [value + '%', 'Attended']}
+                                    />
+                                    <Area
+                                        dataKey="percentage"
+                                        type="monotone"
+                                        stroke="var(--chart)"
+                                        fill="var(--chart)"
+                                        fillOpacity={0.08}
+                                        strokeWidth={2}
+                                        isAnimationActive={false}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
-                        <span className="text-xs font-mono text-zinc-400">
-                            {missedSessions.length} Missed
-                        </span>
-                    </div>
-
-                    {missedSessions.length === 0 ? (
-                        <div className="py-8 text-center">
-                            <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400/80 mb-2" />
-                            <p className="text-sm font-medium text-zinc-200">Perfect Record!</p>
-                            <p className="text-xs text-zinc-500 mt-0.5">You have zero absences on record.</p>
+                        <div className="flex flex-wrap gap-x-8 gap-y-3 mt-5 border-t border-zinc-800 pt-5">
+                            {monthly.map((month) => (
+                                <p key={month.key} className="text-xs text-zinc-400">
+                                    <span className="font-mono text-zinc-100">{month.label}</span> ·{' '}
+                                    {month.attended} / {month.conducted} attended
+                                </p>
+                            ))}
                         </div>
-                    ) : (
-                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1 divide-y divide-zinc-800/60">
-                            {missedSessions.map((s, idx) => (
-                                <div key={idx} className="flex items-center justify-between pt-2 first:pt-0">
-                                    <div>
-                                        <p className="text-xs font-semibold text-white">{s.subjectName}</p>
-                                        <p className="text-[11px] text-zinc-500">
-                                            {new Date(s.date).toLocaleDateString('en-IN', {
-                                                weekday: 'short',
+                    </>
+                ) : (
+                    <p className="text-sm text-zinc-400">
+                        The monthly trend appears after your first finalised lecture
+                    </p>
+                )}
+            </section>
+            <section className="card !p-0">
+                <header className="section-heading-row">
+                    <h2>Absence log</h2>
+                    <span className="font-mono text-xs text-zinc-400">{missed.length} missed</span>
+                </header>
+                {missed.length ? (
+                    <div className="max-h-96 overflow-auto">
+                        <table className="w-full min-w-[560px]">
+                            <thead>
+                                <tr>
+                                    {['Lecture date', 'Subject', 'Class', 'Teacher'].map((label) => (
+                                        <th className="text-left" key={label}>
+                                            {label}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {missed.map((record, index) => (
+                                    <tr
+                                        className="border-t border-zinc-800"
+                                        key={(record.id || record.sessionId || index) + record.subjectCode}
+                                    >
+                                        <td className="font-mono text-xs whitespace-nowrap">
+                                            {new Date(record.date).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
                                                 day: 'numeric',
                                                 month: 'short',
                                                 year: 'numeric'
                                             })}
-                                        </p>
-                                    </div>
-                                    <span className="rounded-full bg-red-500/10 border border-red-500/30 px-2 py-0.5 text-[11px] font-semibold text-red-400">
-                                        Absent
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
+                                        </td>
+                                        <td>{record.subjectName}</td>
+                                        <td>{record.className}</td>
+                                        <td>{record.teacherName || '—'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="p-6 text-sm text-zinc-400">No absences in your completed lecture records</p>
+                )}
+            </section>
         </div>
     );
-};
-
-export default StudentReports;
+}
