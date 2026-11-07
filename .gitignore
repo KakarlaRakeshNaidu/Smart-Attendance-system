@@ -1,5 +1,5 @@
 # Track application source and required runtime/build files only.
-# All other files are local by default, including documentation and helper files.
+# All other files are local by default, except the public setup README below.
 *
 
 # Repository rules, required license and application launch/deployment files.
@@ -119,6 +119,37 @@ venv/
 .insightface/
 uploads/
 *.py[cod]
+# Keep student records, biometric data and downloaded weights out of source trees.
+data/
+datasets/
+student-data/
+student_data/
+face-embeddings/
+face_embeddings/
+embeddings/
+students.json
+attendance.json
+embeddings.json
+face_embeddings.json
+face-embeddings.json
+*.csv
+*.xlsx
+*.xls
+*.bson
+*.dump
+*.sqlite*
+*.db
+*.onnx
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.h5
+*.hdf5
 *.log
 *.bak
 *.tmp
@@ -138,10 +169,18 @@ graphify/
 AGENTS.md
 CLAUDE.md
 *.md
+# Public installation, architecture and deployment instructions.
+!/README.md
 
 # Secrets stay local; only these non-secret configuration templates are allowed.
 .env
 .env.*
+secrets.*
+credentials.*
+*.pem
+*.key
+*.p12
+*.pfx
 !/.env.docker.example
 !/student-attendance-system/client/.env.example
 !/student-attendance-system/server/.env.example
