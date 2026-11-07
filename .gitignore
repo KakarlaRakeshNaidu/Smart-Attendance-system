@@ -1,142 +1,147 @@
-# ── Node.js ───────────────────────────────────────────────────────────────────
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Track application source and required runtime/build files only.
+# All other files are local by default, including documentation and helper files.
+*
 
-# ── Environment Variables ─────────────────────────────────────────────────────
-.env
-# .env.example is intentionally NOT ignored (it's a template for contributors)
+# Repository rules, required license and application launch/deployment files.
+!/.gitignore
+!/LICENSE
+!/package.json
+!/package-lock.json
+!/docker-compose.yml
+!/render.yaml
+!/.env.docker.example
 
-# ── Build Artifacts ───────────────────────────────────────────────────────────
-dist/
-build/
-student-attendance-system/client/dist/
-student-attendance-system/client/build/
-student-attendance-system/server/dist/
+# Frontend runtime and build configuration.
+!/student-attendance-system/
+!/student-attendance-system/client/
+!/student-attendance-system/client/package.json
+!/student-attendance-system/client/package-lock.json
+!/student-attendance-system/client/index.html
+!/student-attendance-system/client/vite.config.js
+!/student-attendance-system/client/tailwind.config.js
+!/student-attendance-system/client/postcss.config.js
+!/student-attendance-system/client/vercel.json
+!/student-attendance-system/client/Dockerfile
+!/student-attendance-system/client/.dockerignore
+!/student-attendance-system/client/nginx.conf
+!/student-attendance-system/client/.env.example
 
-# ── Uploads (local profile photos — not committed to repo) ────────────────────
-student-attendance-system/server/uploads/
+# Frontend application source and assets.
+!/student-attendance-system/client/src/
+!/student-attendance-system/client/src/**/
+!/student-attendance-system/client/src/**/*.[jt]s
+!/student-attendance-system/client/src/**/*.[jt]sx
+!/student-attendance-system/client/src/**/*.css
+!/student-attendance-system/client/src/**/*.scss
+!/student-attendance-system/client/src/**/*.json
+!/student-attendance-system/client/src/**/*.svg
+!/student-attendance-system/client/src/**/*.png
+!/student-attendance-system/client/src/**/*.jpg
+!/student-attendance-system/client/src/**/*.jpeg
+!/student-attendance-system/client/src/**/*.webp
+!/student-attendance-system/client/src/**/*.ico
+!/student-attendance-system/client/src/**/*.woff
+!/student-attendance-system/client/src/**/*.woff2
+!/student-attendance-system/client/public/
+!/student-attendance-system/client/public/**/*.html
+!/student-attendance-system/client/public/**/*.js
+!/student-attendance-system/client/public/**/*.css
+!/student-attendance-system/client/public/**/*.json
+!/student-attendance-system/client/public/**/*.webmanifest
+!/student-attendance-system/client/public/**/*.svg
+!/student-attendance-system/client/public/**/*.png
+!/student-attendance-system/client/public/**/*.jpg
+!/student-attendance-system/client/public/**/*.jpeg
+!/student-attendance-system/client/public/**/*.webp
+!/student-attendance-system/client/public/**/*.ico
+!/student-attendance-system/client/public/**/*.woff
+!/student-attendance-system/client/public/**/*.woff2
+!/student-attendance-system/client/public/**/
 
-# ── Python ────────────────────────────────────────────────────────────────────
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyo
-*.pyd
-.Python
-*.egg
-*.egg-info/
-dist/
-eggs/
-.eggs/
+# Backend runtime and deployment configuration.
+!/student-attendance-system/server/
+!/student-attendance-system/server/package.json
+!/student-attendance-system/server/package-lock.json
+!/student-attendance-system/server/vercel.json
+!/student-attendance-system/server/Dockerfile
+!/student-attendance-system/server/.dockerignore
+!/student-attendance-system/server/.env.example
+!/student-attendance-system/server/api/
+!/student-attendance-system/server/api/**/
+!/student-attendance-system/server/api/**/*.js
+!/student-attendance-system/server/src/
+!/student-attendance-system/server/src/**/
+!/student-attendance-system/server/src/**/*.[jt]s
+!/student-attendance-system/server/src/**/*.json
+!/student-attendance-system/server/scripts/
+!/student-attendance-system/server/scripts/**/
+!/student-attendance-system/server/scripts/**/*.js
+!/student-attendance-system/server/scripts/**/*.cjs
+!/student-attendance-system/server/scripts/**/*.mjs
 
-# Python virtual environments
-venv/
-.venv/
-env/
-ENV/
+# Python face recognition service source and dependencies.
+!/student-attendance-system/server/python/
+!/student-attendance-system/server/python/**/
+!/student-attendance-system/server/python/**/*.py
+!/student-attendance-system/server/python/requirements.txt
+!/student-attendance-system/server/python/Dockerfile
+!/student-attendance-system/server/python/.dockerignore
 
-# InsightFace downloaded model weights (large binary files)
-# Stored at: C:/Users/{user}/.insightface/models/
-# They are auto-downloaded on first run — no need to commit
-.insightface/
-
-# ── Logs ──────────────────────────────────────────────────────────────────────
-logs/
-*.log
-*.log.*
-
-# ── OS ────────────────────────────────────────────────────────────────────────
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
-
-# ── IDEs & Editors ────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# ── Testing ───────────────────────────────────────────────────────────────────
+# Never track tests, fixtures, reports or local verification tools.
+test/
+tests/
+__tests__/
+__mocks__/
+fixtures/
+verification/
 coverage/
-.nyc_output/
-.pytest_cache/
-
-# ── Misc ──────────────────────────────────────────────────────────────────────
-*.bak
-*.tmp
-*.local
-*.orig
-.cache/
-/graphify-out/
-/Microsoft.PowerShell.Core/
-/IS.md
-
-# Local code-analysis and assistant artifacts
-/graphify/
-/.graphify/
-/.github/copilot-instructions.md
-
-# Root-local helper folder. The required Python launcher lives in server/scripts.
-/scripts/
-
-# Disposable test outputs and local test helpers
-/student-attendance-system/server/scripts/serve-fixtures.js
 test-results/
 playwright-report/
-.vitest/
+blob-report/
+htmlcov/
+*.test.*
+*.spec.*
+test_*.py
+*_test.py
+conftest.py
+student-attendance-system/server/scripts/serve-fixtures.js
 
-# Vite development caches and generated configuration bundles
+# Never track installed dependencies, generated files, uploads or model weights.
+node_modules/
+dist/
+build/
+.cache/
 .vite/
 .vite-temp/
-
-# Local task reports (README and setup documentation remain tracked)
-/VERIFICATION.md
-/UPGRADE2.md
-
-# Local helper scripts and environment variants
+__pycache__/
+.venv/
+venv/
+.insightface/
+uploads/
+*.py[cod]
+*.log
+*.bak
+*.tmp
 *.local.*
-.env.*
-!.env.example
-!.env.sample
-!.env.template
+*Zone.Identifier*
 
-# Additional generated test reports and Python tooling caches
-blob-report/
-playwright/.cache/
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-.mypy_cache/
-.ruff_cache/
-.tox/
-.nox/
-.hypothesis/
-
-# Preserve meaningful source regression tests. Generated reports, caches and
-# disposable *.local.* helpers are ignored above, rather than all test folders.
-
-!.env.docker.example
-
-# Private development and verification files
+# Local tooling, editor files and reports stay private.
 .local-work/
 .codex/
 .chatgpt/
+.github/
+.vscode/
+.idea/
+graphify-out/
+graphify/
+.graphify/
 AGENTS.md
-**/tests/
-**/verification/
-**/*.test.*
-**/*.spec.*
-**/*Zone.Identifier*
+CLAUDE.md
+*.md
+
+# Secrets stay local; only these non-secret configuration templates are allowed.
+.env
+.env.*
+!/.env.docker.example
+!/student-attendance-system/client/.env.example
+!/student-attendance-system/server/.env.example
